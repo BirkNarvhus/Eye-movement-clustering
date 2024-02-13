@@ -25,7 +25,7 @@ num_cl = 10
 batch_size = 128
 root = '../data/mnist'
 
-modelname = "simclr_model_5.pth"
+modelname = "simclr_model_3.pth"
 
 dsmodel = SimpleCnn(1, 64)
 dsmodel.load_state_dict(torch.load("../content/saved_models/" + modelname)["model_state_dict"])
@@ -67,7 +67,7 @@ def main():
             tr_loss = loss_fn(z, y)  # /accumulation_steps #y.to(dtype=torch.float), z)
             tr_loss.backward()
 
-            preds = torch.exp(z.cpu().data) / torch.sum(torch.exp(z.cpu().data))
+            preds = z.detach()
 
             # if (iter_num+1)%accumulation_steps==0:
             dsoptimizer.step()

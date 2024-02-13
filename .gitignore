@@ -1,4 +1,4 @@
 .idea
-content
-data
+content/saved_models/*
+data/*
 */__pycache__

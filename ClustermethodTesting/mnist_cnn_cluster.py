@@ -1,5 +1,7 @@
 import os
 
+from sklearn.manifold import TSNE
+
 from models.larsOptim import LARS
 from util.data import data_generator
 import torch.nn as nn
@@ -8,11 +10,9 @@ import torch
 from models.simpleCnn import SimpleCnn
 from models.simClrLoss import SimCLR_Loss
 import matplotlib.pyplot as plt
-import matplotlib as mpl
-from tsnecuda import TSNE
 
 
-mpl.use('Qt5Agg')
+#mpl.use('Qt5Agg')
 
 device = "cpu"
 if torch.cuda.is_available():
@@ -25,7 +25,7 @@ lr = 0.001
 input_size = 1
 n_epochs = 5
 steps = 0
-max_batches = 10 # all if 0
+max_batches = 5 # all if 0
 permute = False
 num_feats = 64
 lossfunction = SimCLR_Loss(batch_size, 0.5)
@@ -38,8 +38,8 @@ def test():
         idx = 0
         for x_i, x_j, _ in test_loader:
             idx += 1
-            x_i.to(device)
-            x_j.to(device)
+            x_i = x_i.to(device=device, dtype=torch.float)
+            x_j = x_j.to(device=device, dtype=torch.float)
             #target.to(device)
 
             z_i = model(x_i)
@@ -81,7 +81,7 @@ def plot_features(model, num_classes, num_feats, batch_size):
     num_samples = int(batch_size * (targets.shape[0] // batch_size))  # (len(val_df)
 
     fig = plt.figure()
-    ax = fig.add_subplot(projection='2d')
+    ax = fig.add_subplot()
 
     for i in range(num_classes):
         indices = np.array([targets[:num_samples] == i]).squeeze()
@@ -151,7 +151,7 @@ if __name__ == '__main__':
 
     pytorch_total_params = sum(p.numel() for p in model.parameters())
     print('Number of params: {}'.format(pytorch_total_params))
-    plot_features(model, 10, num_feats, batch_size)
     save_model(model, optimizer, n_epochs, 'simclr_model_{}.pth')
+    plot_features(model, 10, num_feats, batch_size)
 
 
