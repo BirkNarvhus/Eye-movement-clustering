@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 from util.clr_dataset import ClrDataset
 
 
-def data_generator(root, batch_size, clr=False):
+def data_generator(root, batch_size, clr=False, shuffle=False):
     """
     Generator function for data loading of mnist datasett (for now)
     :param clr: if True, returns a dataset for contrastive learning
@@ -21,7 +21,7 @@ def data_generator(root, batch_size, clr=False):
                                     transforms.RandomGrayscale(p=0.2)
                                 ]))
         test_set = ClrDataset(root=root, train=False, download=True,
-                               transform=transforms.Compose([
+                              transform=transforms.Compose([
                                    transforms.ToTensor(),
                                    transforms.Normalize((0.1307,), (0.3081,)),
                                    transforms.RandomGrayscale(p=0.3)
@@ -38,8 +38,8 @@ def data_generator(root, batch_size, clr=False):
                                       transforms.Normalize((0.1307,), (0.3081,))
                                   ]))
 
-    train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size)
-    test_loader = torch.utils.data.DataLoader(test_set, batch_size=batch_size)
+    train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=shuffle)
+    test_loader = torch.utils.data.DataLoader(test_set, batch_size=batch_size, shuffle=shuffle)
     return train_loader, test_loader
 
 

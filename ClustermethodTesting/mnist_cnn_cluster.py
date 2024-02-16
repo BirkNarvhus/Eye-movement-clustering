@@ -11,6 +11,7 @@ from models.simpleCnn import SimpleCnn
 from models.simClrLoss import SimCLR_Loss
 import matplotlib.pyplot as plt
 
+from util.plot_tsne import PlotUtil
 
 #mpl.use('Qt5Agg')
 
@@ -76,19 +77,8 @@ def plot_features(model, num_classes, num_feats, batch_size):
             feats = np.append(feats, out, axis=0)
             target = target.cpu().data.numpy().reshape((-1, 1))
             targets = np.append(targets, target, axis=0)
-    tsne = TSNE(n_components=2, perplexity=15, learning_rate=10)
-    x_feats = tsne.fit_transform(feats)
-    num_samples = int(batch_size * (targets.shape[0] // batch_size))  # (len(val_df)
-
-    fig = plt.figure()
-    ax = fig.add_subplot()
-
-    for i in range(num_classes):
-        indices = np.array([targets[:num_samples] == i]).squeeze()
-        ax.scatter(x_feats[indices, 1], x_feats[indices, 0])
-
-    ax.legend([str(i) for i in range(num_classes)])
-    plt.show()
+    plt_util = PlotUtil(feats, targets, "t-SNE")
+    plt_util.plot_tsne()
 
 
 def save_model(model, optimizer, current_epoch, name):
