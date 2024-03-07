@@ -1,3 +1,4 @@
+import numpy
 import torch
 from torch import nn
 
@@ -20,91 +21,111 @@ class Chomp1d(nn.Module):
 
 
 class Blocks3d(nn.Module):
-    def __init__(self, input_channels, output_channels, kernel_size=(3, 3, 3), special_stride=1, temp_stride=1, dilation_size=1):
+    def __init__(self, input_channels, output_channels, kernel_size=(3, 3, 3), special_stride=1, temp_stride=1,
+                 dilation_size=1, two_plus_1 = True):
         super(Blocks3d, self).__init__()
-        self.conv = nn.Conv3d(input_channels, output_channels, kernel_size=(1, kernel_size[1], kernel_size[2]),
-                              stride=(1, special_stride, special_stride), padding="same" if special_stride == 1 else (0, 1, 1), dilation=dilation_size)
+        padding_to_chomp = (kernel_size[0] - 1) * dilation_size
+        self.chomp = Chomp1d(padding_to_chomp)
+        if two_plus_1:
+            self.conv = nn.Conv3d(input_channels, output_channels, kernel_size=(1, kernel_size[1], kernel_size[2]),
+                                  stride=(1, special_stride, special_stride),
+                                  padding="same" if special_stride == 1 else (0, 1, 1), dilation=dilation_size)
+            padding = (padding_to_chomp, 0, 0)
 
-        padding = (kernel_size[0] - 1, 0, 0) * dilation_size
-        self.conv2 = nn.Conv3d(output_channels, output_channels, kernel_size=(kernel_size[0], 1, 1), stride=(temp_stride, 1, 1),
-                               padding=padding, dilation=dilation_size)
-        self.chomp = Chomp1d(padding[0])
-        self.net = nn.Sequential(self.conv, self.conv2, self.chomp)
+            self.conv2 = nn.Conv3d(output_channels, output_channels, kernel_size=(kernel_size[0], 1, 1),
+                                   stride=(temp_stride, 1, 1),
+                                   padding=padding, dilation=dilation_size)
+            self.net = nn.Sequential(self.conv, self.conv2, self.chomp)
+        else:
+            padding = (padding_to_chomp, 1, 1)
 
+            self.conv = nn.Conv3d(input_channels, output_channels, kernel_size=kernel_size, stride=(temp_stride, special_stride, special_stride),
+                                  padding=padding, dilation=dilation_size)
+
+            self.net = nn.Sequential(self.conv, self.chomp)
     def forward(self, x):
-        x = self.conv(x)
-        x = self.conv2(x)
-        x = self.chomp(x)
-
-        return x
+        return self.net(x)
 
 
 class Residual_Block3d(nn.Module):
-    def __init__(self, input_channels, output_channels, kernel_size=(3, 3, 3), special_down_sample=1, temp_stride=1, dilation_size=1):
+    def __init__(self, input_channels, output_channels, kernel_size=(3, 3, 3), special_down_sample=1, temp_stride=1,
+                 dilation_size=1, num_blocks=1):
         super(Residual_Block3d, self).__init__()
-        self.conv1 = Blocks3d(input_channels, output_channels, kernel_size, special_down_sample, temp_stride, dilation_size)
-        self.conv2 = Blocks3d(output_channels, output_channels, kernel_size, 1, temp_stride, dilation_size)
+
+        self.conv_layers = nn.ModuleList()
         self.relu = nn.ReLU()
-        self.net = nn.Sequential(self.conv1, self.relu, self.conv2, self.relu)
+        for i in range(num_blocks):
+            self.conv_layers.append(Blocks3d(output_channels if i != 0 else input_channels, output_channels, kernel_size, special_down_sample if i == 0 else 1, temp_stride,
+                                             dilation_size, two_plus_1=True))
+            self.conv_layers.append(self.relu)
+        self.net = nn.Sequential(*self.conv_layers)
 
         self.down_sample = nn.Conv3d(input_channels, output_channels, 1, stride=(1, special_down_sample,
                                                                                  special_down_sample),
-                                     padding=0) if input_channels != output_channels \
+                                     padding=0) if input_channels != output_channels or special_down_sample != 0 \
             else None
 
     def forward(self, x):
         res = x if self.down_sample is None else self.down_sample(x)
-        x = self.conv1(x)
-        x = self.relu(x)
-        x = self.conv2(x)
-        x = self.relu(x)
+        x = self.net(x)
         return self.relu(x + res)
 
+
 class Encoder(nn.Module):
-    def __init__(self, input_channels, output_channels):
+    def __init__(self, input_size, input_channels, bottleneck_output, layers=((16, 32, 2, 1, 1, 5), (32, 64, 2, 1, 5), (64, 64, 1, 1, 1, 5))):
+        '''
+
+        :param input_channels:
+        :param output_channels:
+        :param layers: list of tuples, each tuple is a layer with the following format: (input_channels, output_channels,
+        special_down_sample, temp_stride, dilation, num_3d_conv_blocks)
+        '''
         super(Encoder, self).__init__()
 
-        # down sample special dim
-        self.down_sample_special = nn.Conv3d(input_channels, 16, (1, 2, 2), padding=0, stride=(1, 2, 2))
+        if len(layers) <= 0:
+            raise ValueError("layers must have at least one layer")
 
-        self.conv1 = Residual_Block3d(16, 32, special_down_sample=2)
-        self.conv2 = Residual_Block3d(32, 64, special_down_sample=1)
-        self.conv3 = Residual_Block3d(64, 64, special_down_sample=1)
+        # down sample special dim
+        self.down_sample_special = nn.Conv3d(input_channels, layers[0][0], (1, 2, 2), padding=0, stride=(1, 2, 2))
+        self.conv_layers = nn.ModuleList()
+        for layer in layers:
+            self.conv_layers.append(Residual_Block3d(layer[0], layer[1], special_down_sample=layer[2], temp_stride=layer[3],
+                                                dilation_size=layer[4], num_blocks=layer[5]))
+
         self.flatten = nn.Flatten()
-        self.linear = nn.Linear(int(64 * (28/2/2)), output_channels*7*7)
-        self.softmax = nn.Softmax(dim=1)
+        linear_input_size = int(layers[-1][1] * (input_size / (numpy.prod([x[2] for x in layers]) * 2)))
+        self.linear = nn.Linear(linear_input_size, bottleneck_output*2)
+        self.linear2 = nn.Linear(bottleneck_output*2, bottleneck_output)
 
         self.global_pool = Cumulativ_global_pooling()
-        self.relu = nn.ReLU()
 
-        self.net = nn.Sequential(self.down_sample_special, self.conv1, self.conv2, self.conv3,
-                                 self.global_pool, self.flatten, self.linear, self.softmax)
+        self.conv_net = nn.Sequential(self.down_sample_special, *self.conv_layers)
+        self.bottleneck = nn.Sequential(self.global_pool, self.flatten, self.linear, self.linear2)
 
     def forward(self, x):
-        x = self.down_sample_special(x)
-        x = self.conv1(x)
-        x = self.conv2(x)
-        x = self.conv3(x)
-        x = self.global_pool(x)
+        x = self.conv_net(x)
         x = x[:, :, -1, :]  # take the last time step of the sequence
-        print(x.shape)
-        x = self.flatten(x)
-        x = self.linear(x)
-        x = self.softmax(x)
+        x = self.bottleneck(x)
         return x
 
 
 def get_n_params(model):
-    pp=0
-    for p in list(model.parameters()):
-        nn=1
-        for s in list(p.size()):
-            nn = nn*s
-        pp += nn
-    return pp
+    param_size = 0
+    for param in model.parameters():
+        param_size += param.nelement() * param.element_size()
+    buffer_size = 0
+    for buffer in model.buffers():
+        buffer_size += buffer.nelement() * buffer.element_size()
+
+    size_all_mb = (param_size + buffer_size) / 1024 ** 2
+    print('model size: {:.3f}MB'.format(size_all_mb))
+    return param_size
 
 
 def test():
+    layers = ((16, 32, 2, 1, 1, 5), (32, 64, 1, 1, 1, 5), (64, 64, 1, 1, 1, 5))
+
+
     model = Blocks3d(1, 1)
     x = torch.randn(64, 1, 4, 28, 28)
     y = model(x)
@@ -112,13 +133,13 @@ def test():
     print(y.shape)
 
     print("------------------")
-    model = Encoder(1, 1)
+    model = Encoder(28, 1, 64, layers)
     x = torch.randn(64, 1, 4, 28, 28)
     y = model(x)
     print(x.shape)
     print(y.shape)
 
-    print(get_n_params(model))
+    print('number of params: {}'.format(get_n_params(model)))
 
 
 if __name__ == '__main__':
