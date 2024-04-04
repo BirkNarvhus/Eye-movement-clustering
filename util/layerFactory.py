@@ -24,6 +24,20 @@ class LayerFactory:
             layer_array.append(reslayer)
         return layer_array
 
+    def generate_reverse_layer_array(self):
+        layer_array = []
+        for layer in self.layers:
+            reslayer = []
+            for key in self.layers[layer].keys():
+                reslayer.append(list(zip(self.layers[layer][key]["channels"], self.layers[layer][key]["kernels_size"])))
+            layer_array.insert(0, reslayer)
+        return layer_array
+
+    def get_last_size(self):
+        upscale_factor = 2 ** len(self.layers.keys())
+        feature_size_last_layer = list((list(self.layers.values()))[-1].values())[-1]["channels"][-1][-1]
+        return upscale_factor, feature_size_last_layer
+
     def reset(self):
         self.layers = {}
 
@@ -46,7 +60,11 @@ def test():
 
     print(factory.generate_layer_array()[0])
     print(factory.generate_layer_array()[1])
+    print(factory.generate_reverse_layer_array()[0])
+    print(factory.generate_reverse_layer_array()[1])
 
+
+    print(factory.get_upscale_factor())
 
 if __name__ == '__main__':
     test()

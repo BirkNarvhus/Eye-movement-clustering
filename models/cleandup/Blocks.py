@@ -9,6 +9,7 @@ class Cumulativ_global_pooling(nn.Module):
     def forward(self, x):
         return torch.mean(x, dim=2)
 
+
 class Chomp1d(nn.Module):
     def __init__(self, chomp_size):
         super(Chomp1d, self).__init__()
@@ -21,19 +22,33 @@ class Chomp1d(nn.Module):
 class TempConvBlock(nn.Module):
     def __init__(self, input_channels, output_channels, kernel_size=(3, 3, 3), stride=1, padding=1, dilation_size=1):
         super(TempConvBlock, self).__init__()
+
+        zero_padding = (0, kernel_size[1] // 2, kernel_size[2] // 2)
         self.conv = nn.Conv3d(input_channels, output_channels, kernel_size=(1, kernel_size[1], kernel_size[2]),
-                              stride=stride, padding=0)
+                              stride=stride, padding=zero_padding)
 
         padding_to_chomp = (kernel_size[0] - 1) * dilation_size
-        self.chomp = Chomp1d(padding_to_chomp)
 
-        self.temp_Conv = nn.Conv3d(output_channels, output_channels, kernel_size=(kernel_size[0], 1, 1), stride=stride,
-                                   padding=(padding_to_chomp, 1, 1), dilation=dilation_size)
-
-        self.net = nn.Sequential(self.conv, self.temp_Conv, self.chomp)
+        if kernel_size[0] != 1:
+            self.chomp = Chomp1d(padding_to_chomp)
+            self.temp_Conv = nn.Conv3d(output_channels, output_channels, kernel_size=(kernel_size[0], 1, 1),
+                                       stride=(stride, 1, 1),
+                                       padding=(padding_to_chomp, 0, 0), dilation=dilation_size)
+            self.net = nn.Sequential(self.conv, self.temp_Conv, self.chomp)
+        else:
+            self.net = nn.Sequential(self.conv)
 
     def forward(self, x):
         return self.net(x)
+
+
+class Projection(nn.Module):
+    def __init__(self, channels):
+        super(Projection, self).__init__()
+        self.projection = nn.Conv3d(channels[0], channels[1], kernel_size=(1, 1, 1), stride=1, padding=0)
+
+    def forward(self, x):
+        return self.projection(x)
 
 
 class ResBlock(nn.Module):
@@ -44,6 +59,10 @@ class ResBlock(nn.Module):
         self.relu = nn.LeakyReLU()
 
         for i in range(len(kernels_size)):
+            if i != 0:
+                if channels[i][0] != channels[i - 1][1]:
+                    modList.append(Projection((channels[i - 1][1], channels[i][0])))
+
             modList.append(TempConvBlock(channels[i][0], channels[i][1], kernel_size=kernels_size[i], stride=stride,
                                          padding=padding))
             modList.append(self.relu)
@@ -65,7 +84,6 @@ class MultiResLayer(nn.Module):
     def __init__(self, channels, kernels_size=(((3, 3, 3), (3, 3, 3), (3, 3, 3)), ((3, 3, 3), (3, 3, 3), (3, 3, 3))),
                  stride=1, padding=1):
         super(MultiResLayer, self).__init__()
-        self.downsample = nn.AvgPool3d((1, 2, 2), (1, 2, 2))
 
         if len(channels) != len(kernels_size):
             raise ValueError("Channels and kernels_size must have the same length")
