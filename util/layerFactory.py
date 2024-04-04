@@ -39,7 +39,7 @@ class LayerFactory:
         return layer_array
 
     def get_last_size(self):
-        upscale_factor = 2 ** len(self.layers.keys())
+        upscale_factor = 2 ** len([key for key in self.layers.keys() if self.layers[key]["pool_type"] == "down"])
         feature_size_last_layer = list((list(self.layers.values()))[-1].values())[-1]["channels"][-1][-1]
         return upscale_factor, feature_size_last_layer
 

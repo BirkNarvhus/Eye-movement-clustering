@@ -67,6 +67,7 @@ class ResBlock(nn.Module):
                                          padding=padding))
             modList.append(self.relu)
             modList.append(nn.BatchNorm3d(channels[i][1]))
+            modList.append(nn.Dropout(0.2))
 
         self.projection = nn.Conv3d(channels[0][0], channels[-1][1], kernel_size=(1, 1, 1), stride=stride,
                                     padding=0) if channels[0][0] != channels[-1][1] else None
