@@ -2,6 +2,13 @@ from torch import nn
 import torch
 
 
+class Cumulativ_global_pooling(nn.Module):
+    def __init__(self):
+        super(Cumulativ_global_pooling, self).__init__()
+
+    def forward(self, x):
+        return torch.mean(x, dim=2)
+
 class Chomp1d(nn.Module):
     def __init__(self, chomp_size):
         super(Chomp1d, self).__init__()
@@ -49,11 +56,8 @@ class ResBlock(nn.Module):
     def forward(self, x):
         res = x
         x = self.net(x)
-        print(x.shape)
-        print(res.shape)
         if self.projection:
             res = self.projection(res)
-
         return self.relu(x + res)
 
 
@@ -70,6 +74,7 @@ class MultiResLayer(nn.Module):
 
         for i in range(len(channels)):
             if len(channels[i]) != len(kernels_size[i]):
+                print(channels[i], kernels_size[i])
                 raise ValueError("Channels and kernels_size must have the same length")
 
             self.res_blocks.append(ResBlock(channels[i], kernels_size[i], stride, padding))
@@ -106,7 +111,7 @@ class UpsampleLayer(nn.Module):
         return self.net(x)
 
 
-def Test():
+def test():
     model = ResBlock()
     x = torch.randn(5, 64, 10, 32, 32)
     print(model(x).shape)
@@ -127,4 +132,4 @@ def Test():
 
 
 if __name__ == '__main__':
-    Test()
+    test()
