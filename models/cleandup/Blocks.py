@@ -112,7 +112,6 @@ class DownsampleLayer(nn.Module):
         self.downsample = nn.AvgPool3d((1, 2, 2), (1, 2, 2))
 
         self.resBlockLayers = MultiResLayer(channels, kernels_size, stride, padding)
-
         self.net = nn.Sequential(self.downsample, self.resBlockLayers)
 
     def forward(self, x):

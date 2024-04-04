@@ -4,9 +4,10 @@ class LayerFactory:
     def __init__(self):
         self.layers = {}
 
-    def add_layer(self, name):
+    def add_layer(self, name, pool_type="down"):
         new_index = len(self.layers.keys())
         self.layers[name + "_" + str(new_index)] = {}
+        self.layers[name + "_" + str(new_index)]["pool_type"] = pool_type
         return name + "_" + str(new_index)
 
     def add_residual_block(self, name, channels, kernels_size):
@@ -19,8 +20,12 @@ class LayerFactory:
         layer_array = []
         for layer in self.layers:
             reslayer = []
+            reslayer.append(self.layers[layer]["pool_type"])
             for key in self.layers[layer].keys():
-                reslayer.append(list(zip(self.layers[layer][key]["channels"], self.layers[layer][key]["kernels_size"])))
+                if key == "pool_type":
+                    pass
+                else:
+                    reslayer.append(list(zip(self.layers[layer][key]["channels"], self.layers[layer][key]["kernels_size"])))
             layer_array.append(reslayer)
         return layer_array
 
@@ -46,12 +51,14 @@ class LayerFactory:
             for i, l in enumerate(f.readlines()):
                 l.strip()
                 if l == "\n":
+                    continue
+                l = l.replace("\n", "")
+                if l == "down" or l == "none":
                     if len(kernels) != 0:
-                        print("adding res: ", len(kernels))
                         self.add_residual_block(layer_name, channels, kernels)
                         kernels = []
                         channels = []
-                    layer_name = self.add_layer("down")
+                    layer_name = self.add_layer("down", pool_type=l)
                     pass
                 else:
                     l = l.split(",")
@@ -66,7 +73,6 @@ class LayerFactory:
                         channels.append(tuple(map(int, l[3:])))
                         if res_interval != 0:
                             if i % res_interval == 0:
-                                print("adding res: ", len(kernels))
 
                                 self.add_residual_block(layer_name, channels, kernels)
                                 kernels = []
@@ -82,11 +88,13 @@ class LayerFactory:
 
     def write_to_file(self, filename):
         with open(filename, 'w') as f:
-            for layer in self.layers:
+            for i, layer in enumerate(self.layers):
+                if i != 0:
+                    f.write(self.layers[layer]["pool_type"] + "\n")
+                del self.layers[layer]["pool_type"]
                 for block in self.layers[layer]:
                     for channel, kernel in zip(self.layers[layer][block]["channels"], self.layers[layer][block]["kernels_size"]):
                         f.write(str(kernel[0]) + "," + str(kernel[1]) + "," + str(kernel[2]) + "," + str(channel[0]) + "," + str(channel[1]) + "\n")
-                f.write("\n")
     def reset(self):
         self.layers = {}
 
@@ -111,9 +119,11 @@ def test():
 
     factory.read_from_file("../models/cleandup/Arc/model_1.csv", full_block_res=True, res_interval=0)
 
+
+    print(factory.generate_layer_array())
+    #print([len(x) for x in factory.generate_layer_array()])
     factory.write_to_file("../models/cleandup/Arc/model_2.csv")
 
-    print(len(factory.generate_layer_array()))
-    print([len(x) for x in factory.generate_layer_array()])
+
 if __name__ == '__main__':
     test()

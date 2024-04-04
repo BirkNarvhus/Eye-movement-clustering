@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 from torch import nn
-from Blocks import DownsampleLayer, Cumulativ_global_pooling, Projection
+from Blocks import DownsampleLayer, Cumulativ_global_pooling, Projection, MultiResLayer
 from util.layerFactory import LayerFactory
 from torchinfo import summary
 from util.modelUtils import get_n_params
@@ -14,15 +14,20 @@ class Encoder(nn.Module):
         self.convLayers = nn.ModuleList()
 
         for i, layer in enumerate(layers):
+            print(layer)
+            layer_type = layer.pop(0)
             if i != 0:
+                print(layer)
                 pro_from = layers[i-1][-1][-1][0][-1]
                 pro_to = layer[0][0][0][0]
                 if pro_from != pro_to:
                     self.convLayers.append(Projection((pro_from, pro_to)))
-
-            self.convLayers.append(DownsampleLayer([[y[0] for y in x] for x in layer],
-                                                   kernels_size=[[y[1] for y in x] for x in layer]))
-
+            if layer_type == "down":
+                self.convLayers.append(DownsampleLayer([[y[0] for y in x] for x in layer],
+                                                       kernels_size=[[y[1] for y in x] for x in layer]))
+            elif layer_type == "none":
+                self.convLayers.append(MultiResLayer([[y[0] for y in x] for x in layer],
+                                                       kernels_size=[[y[1] for y in x] for x in layer]))
         self.global_pooling = Cumulativ_global_pooling() if global_pooling else None
 
     def forward(self, x):
