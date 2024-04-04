@@ -38,6 +38,55 @@ class LayerFactory:
         feature_size_last_layer = list((list(self.layers.values()))[-1].values())[-1]["channels"][-1][-1]
         return upscale_factor, feature_size_last_layer
 
+    def read_from_file(self, filename, full_block_res=False, res_interval=3):
+        kernels = []
+        channels = []
+        with open(filename, 'r') as f:
+            layer_name = self.add_layer("down")
+            for i, l in enumerate(f.readlines()):
+                l.strip()
+                if l == "\n":
+                    if len(kernels) != 0:
+                        print("adding res: ", len(kernels))
+                        self.add_residual_block(layer_name, channels, kernels)
+                        kernels = []
+                        channels = []
+                    layer_name = self.add_layer("down")
+                    pass
+                else:
+                    l = l.split(",")
+                    if not full_block_res:
+                        kernels = [tuple(map(int, l[:3]))]
+                        channels = [tuple(map(int, l[3:]))]
+                        self.add_residual_block(layer_name, channels, kernels)
+                        kernels = []
+                        channels = []
+                    else:
+                        kernels.append(tuple(map(int, l[:3])))
+                        channels.append(tuple(map(int, l[3:])))
+                        if res_interval != 0:
+                            if i % res_interval == 0:
+                                print("adding res: ", len(kernels))
+
+                                self.add_residual_block(layer_name, channels, kernels)
+                                kernels = []
+                                channels = []
+            if len(kernels) != 0:
+                self.add_residual_block(layer_name, channels, kernels)
+
+            while True:
+                if len(list(self.layers[list(self.layers.keys())[-1]].values())) == 0:
+                    self.layers.pop(list(self.layers.keys())[-1])
+                else:
+                    break
+
+    def write_to_file(self, filename):
+        with open(filename, 'w') as f:
+            for layer in self.layers:
+                for block in self.layers[layer]:
+                    for channel, kernel in zip(self.layers[layer][block]["channels"], self.layers[layer][block]["kernels_size"]):
+                        f.write(str(kernel[0]) + "," + str(kernel[1]) + "," + str(kernel[2]) + "," + str(channel[0]) + "," + str(channel[1]) + "\n")
+                f.write("\n")
     def reset(self):
         self.layers = {}
 
@@ -58,13 +107,13 @@ def test():
     factory.add_residual_block(name, ((32, 64), (64, 64), (64, 32)), ((3, 3, 3), (3, 3, 3), (3, 3, 3)))
     factory.add_residual_block(name, ((64, 128), (128, 64), (64, 32)), ((3, 3, 3), (3, 3, 3), (3, 3, 3)))
 
-    print(factory.generate_layer_array()[0])
-    print(factory.generate_layer_array()[1])
-    print(factory.generate_reverse_layer_array()[0])
-    print(factory.generate_reverse_layer_array()[1])
+    factory.reset()
 
+    factory.read_from_file("../models/cleandup/Arc/model_1.csv", full_block_res=True, res_interval=0)
 
-    print(factory.get_upscale_factor())
+    factory.write_to_file("../models/cleandup/Arc/model_2.csv")
 
+    print(len(factory.generate_layer_array()))
+    print([len(x) for x in factory.generate_layer_array()])
 if __name__ == '__main__':
     test()
