@@ -7,31 +7,16 @@ import torch
 from tqdm import tqdm
 from matplotlib import pyplot as plt
 from PIL import Image
-
-
-###
-# util class for loading the openEDS dataset
-# the data is stored in npy files for each image
-# all frames in a video are devided into video subfolders
-# the data is stored in the following structure
-# root
-#   - video1
-#       - frame1.npy
-#       - frame2.npy
-#       - ...
-#   - video2
-#       - frame1.npy
-#       - frame2.npy
-#       - ...
-#   - ...
-###
+from transformations import *
 
 
 class Loader:
-    def __init__(self, data, batch_size=32):
+    def __init__(self, data, batch_size=32, transformations=None):
         self.data = data
         self.batch_size = batch_size
         self.currBatch = 0
+
+        self.transformations = transformations
 
     def get_batch(self):
         """
@@ -50,13 +35,28 @@ class Loader:
 
     def __next__(self):
         if self.currBatch < len(self.data):
-            return torch.tensor(numpy.expand_dims(self.get_batch(), axis=1), dtype=torch.float32)
+            bach = self.get_batch()
+            return (torch.tensor(numpy.expand_dims(self.apply_transformation(bach), axis=1), dtype=torch.float32),
+                    torch.tensor(numpy.expand_dims(self.apply_transformation(bach), axis=1), dtype=torch.float32))
         else:
             raise StopIteration
 
+    def apply_transformation(self, data):
+        """
+        Apply the transformations to the data
+        :param data:
+        :return:
+        """
+        for transformation in self.transformations:
+            data = list(map(transformation, data))
+
+        data = np.array(data)
+
+        return data
+
 
 class OpenEDSLoader:
-    def __init__(self, root, batch_size=32, shuffle=True, max_videos=None, save_path=None, save_anyway=False):
+    def __init__(self, root, batch_size=32, shuffle=True, max_videos=None, save_path=None, save_anyway=False, transformations=None):
         self.root = root
         self.videos = (os.listdir(root))[2:]
         self.max_videos = max_videos
@@ -69,9 +69,9 @@ class OpenEDSLoader:
         if shuffle:
             self.shuffle()
 
-        self.test = Loader((self.data[int(len(self.data) * 0.6):int(len(self.data) * 0.8)]), batch_size=self.batch_size)
-        self.train = Loader(self.data[:int(len(self.data) * 0.6)], batch_size=self.batch_size)
-        self.valid = Loader(self.data[int(len(self.data) * 0.8):], batch_size=self.batch_size)
+        self.test = Loader((self.data[int(len(self.data) * 0.6):int(len(self.data) * 0.8)]), batch_size=self.batch_size, transformations=transformations)
+        self.train = Loader(self.data[:int(len(self.data) * 0.6)], batch_size=self.batch_size, transformations=transformations)
+        self.valid = Loader(self.data[int(len(self.data) * 0.8):], batch_size=self.batch_size, transformations=transformations)
 
         self.data = None
 
@@ -99,10 +99,10 @@ class OpenEDSLoader:
                 frame_data = Image.open(frame_path)
                 video_data.append(np.array(frame_data))
 
-            if len(video_data) > 128:
-                video_data = video_data[:128]
+            if len(video_data) > 120:
+                video_data = video_data[:120]
             else:
-                while len(video_data) < 128:
+                while len(video_data) < 120:
                     video_data.append(np.zeros_like(video_data[0]))
 
             data.append(np.array(video_data))
@@ -137,14 +137,30 @@ class OpenEDSLoader:
 def test():
     root = '../data/openEDS/openEDS'
     save_path = '../data/openEDS/openEDS.npy'
-    loader = OpenEDSLoader(root, batch_size=32, shuffle=True, max_videos=None, save_path=save_path, save_anyway=True)
+
+    transformations = [
+        Crop_top(50), # centers the image better
+        RandomCrop(20),
+        Crop((256, 256)),
+        Rotate(20),
+        Normalize(0, 1),
+        Noise(0.6),
+    ]
+
+    loader = OpenEDSLoader(root, batch_size=32, shuffle=True, max_videos=30, save_path=save_path, save_anyway=False,
+                           transformations=transformations)
 
     train, _, _ = loader.get_loaders()
     batch = next(iter(train))
-    print(batch.shape)
-    fig, ax = plt.subplots(1, 10)
-    for i in range(10):
-        ax[i].imshow(batch[0][10 + i].squeeze(), cmap='gray')
+
+    x_batch, y_batch = batch
+    print(x_batch.shape, y_batch.shape)
+
+    fig, ax = plt.subplots(2, 10)
+    for x in range(10):
+        ax[0, x].imshow(x_batch[0][0][10 + x].squeeze(), cmap='gray')
+        ax[1, x].imshow(y_batch[0][0][10 + x].squeeze(), cmap='gray')
+
     plt.show()
 
 
