@@ -5,6 +5,7 @@ from Blocks import DownsampleLayer, Cumulativ_global_pooling, Projection, MultiR
 from util.layerFactory import LayerFactory
 from torchinfo import summary
 from util.modelUtils import get_n_params
+from torch.utils.checkpoint import checkpoint_sequential
 
 
 class Encoder(nn.Module):
@@ -27,23 +28,29 @@ class Encoder(nn.Module):
                 self.convLayers.append(MultiResLayer([[y[0] for y in x] for x in layer],
                                                        kernels_size=[[y[1] for y in x] for x in layer]))
 
+        self.net = nn.Sequential(*self.convLayers)
     def forward(self, x):
-        buffer = x.split(12, 2)
+        buffer = list(x.split(10, 2))
         stream_buffer = [[] for x in range(len(self.convLayers))]
         output_buffer = None
+
         for i in range(len(buffer)):
-            x = buffer[i]
-            print("Running on slice: ", i + 1)
+            x = buffer.pop(0)
             for buffer_index, layer in enumerate(self.convLayers):
                 if len(stream_buffer[buffer_index]) > 0:
                     x = torch.cat([stream_buffer[buffer_index], x], 2)
                 stream_buffer[buffer_index] = x[:, :, -3:, :, :]
-                x = layer(x)[:, :, -12:, :, :]  # dont care about the first 3 because they are already in the buffer
+
+                if len(buffer) == 0:
+                    x = layer(x)[:, :, -10:, :, :]
+                else:
+                    with torch.no_grad(): # I realy dont know if this is the right way to do it but it saves memory help plz
+                        x = layer(x)[:, :, -10:, :, :]
             if output_buffer is None:
                 output_buffer = x
             else:
                 output_buffer = torch.cat([output_buffer, x], 2)
-        print("output shape: ", output_buffer.shape)
+
         return output_buffer
 
 
@@ -86,11 +93,8 @@ class Encoder_classifier(nn.Module):
                                  self.bottle_neck)
 
     def forward(self, x):
-        for layer in self.net:
-            x = layer(x)
-            print(x.shape)
 
-        return x
+        return self.net(x)
 
 
 def test():
@@ -108,8 +112,8 @@ def test():
     output_size = 600
 
     model = Encoder_classifier(layerfac, data_size, output_size)
-    #x = torch.randn(1, 1, 120, data_size, data_size)
-    #model(x)
+    x = torch.randn(16, 1, 60, data_size, data_size)
+    x = model(x)
     print(summary(model, input_size=(1, 1, 60, data_size, data_size)))
     print("num params ", get_n_params(model))
 

@@ -93,11 +93,9 @@ class MultiResLayer(nn.Module):
 
         for i in range(len(channels)):
             if len(channels[i]) != len(kernels_size[i]):
-                print(channels[i], kernels_size[i])
                 raise ValueError("Channels and kernels_size must have the same length")
             if i != 0:
                 if channels[i - 1][-1][-1] != channels[i][0][0]:
-                    print(channels[i - 1][-1][-1], channels[i][0][0])
                     self.res_blocks.append(Projection((channels[i - 1][-1][-1], channels[i][0][0])))
             self.res_blocks.append(ResBlock(channels[i], kernels_size[i], stride, padding))
 

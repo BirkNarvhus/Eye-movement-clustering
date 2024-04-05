@@ -87,6 +87,14 @@ class Rotate(Transformations):
         return numpy.array(list(map(lambda x: numpy.array(Image.fromarray(x).rotate(rand_angel)), data)))
 
 
+class TempStride(Transformations):
+    def __init__(self, stride):
+        super().__init__()
+        self.stride = stride
+
+    def transform(self, data):
+        return data[::self.stride]
+
 def test():
     x = numpy.random.randn(60, 120, 120)
     random_crop = RandomCrop(10)
@@ -102,6 +110,7 @@ def test():
 
     print(Crop_top(30)(x).shape)
 
+    print(TempStride(2)(x).shape)
 
 if __name__ == "__main__":
     test()

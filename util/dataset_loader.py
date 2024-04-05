@@ -2,12 +2,10 @@ import os
 
 import numpy
 import numpy as np
-import pandas as pd
 import torch
 from tqdm import tqdm
 from matplotlib import pyplot as plt
-from PIL import Image
-from transformations import *
+from util.transformations import *
 
 
 class Loader:
@@ -54,6 +52,8 @@ class Loader:
 
         return data
 
+    def __len__(self):
+        return len(self.data)
 
 class OpenEDSLoader:
     def __init__(self, root, batch_size=32, shuffle=True, max_videos=None, save_path=None, save_anyway=False, transformations=None):
