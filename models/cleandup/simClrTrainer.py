@@ -151,7 +151,7 @@ if __name__ == '__main__':
             if idx > 0:
                 print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\tSteps: {}\t{:.2f}s/it'.format(
                     epoch, idx*batch_size, len(train_loader)*batch_size,
-                          100. * idx / len(train_loader), train_loss.item() / log_interval, steps), time.time() - time0)
+                          100. * idx / len(train_loader), train_loss.item() / log_interval, steps, time.time() - time0))
 
                 time0 = time.time()
 
