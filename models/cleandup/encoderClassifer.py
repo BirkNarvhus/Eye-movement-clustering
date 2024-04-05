@@ -1,11 +1,8 @@
-import numpy as np
 import torch
 from torch import nn
 from Blocks import DownsampleLayer, Cumulativ_global_pooling, Projection, MultiResLayer
 from util.layerFactory import LayerFactory
-from torchinfo import summary
 from util.modelUtils import get_n_params
-from torch.utils.checkpoint import checkpoint_sequential
 
 
 class Encoder(nn.Module):
@@ -83,7 +80,6 @@ class Encoder_classifier(nn.Module):
         self.projection_2d = nn.Conv2d(last_feature_size, hidden_encoder_pro, 1, stride=1, padding=0)
 
         class_input_size = hidden_encoder_pro * (data_size // downscale_factor)**2  # ONLY WORKS IF THE DATA IS SQUARE
-        print("class input size: ", class_input_size)
         self.flatten = nn.Flatten()
         self.bottle_neck = BottleNeck(class_input_size, hidden_linear_features, output_size)
 
@@ -111,10 +107,14 @@ def test():
     data_size = 256
     output_size = 600
 
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    print("running on ",  device)
+
     model = Encoder_classifier(layerfac, data_size, output_size)
     x = torch.randn(16, 1, 60, data_size, data_size)
     x = model(x)
-    print(summary(model, input_size=(1, 1, 60, data_size, data_size)))
+    print(x.shape)
     print("num params ", get_n_params(model))
 
 

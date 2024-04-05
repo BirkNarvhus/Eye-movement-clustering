@@ -44,6 +44,7 @@ class LayerFactory:
         return upscale_factor, feature_size_last_layer
 
     def read_from_file(self, filename, full_block_res=False, res_interval=3):
+        print("Loading model from file: ", filename)
         kernels = []
         channels = []
         with open(filename, 'r') as f:

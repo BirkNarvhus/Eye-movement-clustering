@@ -26,13 +26,15 @@ class Loader:
             self.currBatch += self.batch_size
             return self.data[self.currBatch - self.batch_size:self.currBatch]
         else:
+
             return self.data[self.currBatch:]
 
     def __iter__(self):
+        self.currBatch = 0
         return self
 
     def __next__(self):
-        if self.currBatch < len(self.data):
+        if self.currBatch + self.batch_size < len(self.data):
             bach = self.get_batch()
             return (torch.tensor(numpy.expand_dims(self.apply_transformation(bach), axis=1), dtype=torch.float32),
                     torch.tensor(numpy.expand_dims(self.apply_transformation(bach), axis=1), dtype=torch.float32))
@@ -53,7 +55,7 @@ class Loader:
         return data
 
     def __len__(self):
-        return len(self.data)
+        return len(self.data) // self.batch_size
 
 class OpenEDSLoader:
     def __init__(self, root, batch_size=32, shuffle=True, max_videos=None, save_path=None, save_anyway=False, transformations=None):
@@ -69,8 +71,8 @@ class OpenEDSLoader:
         if shuffle:
             self.shuffle()
 
-        self.test = Loader((self.data[int(len(self.data) * 0.6):int(len(self.data) * 0.8)]), batch_size=self.batch_size, transformations=transformations)
-        self.train = Loader(self.data[:int(len(self.data) * 0.6)], batch_size=self.batch_size, transformations=transformations)
+        self.test = Loader((self.data[int(len(self.data) * 0.8):]), batch_size=self.batch_size, transformations=transformations)
+        self.train = Loader(self.data[:int(len(self.data) * 0.8)], batch_size=self.batch_size, transformations=transformations)
         self.valid = Loader(self.data[int(len(self.data) * 0.8):], batch_size=self.batch_size, transformations=transformations)
 
         self.data = None
@@ -139,15 +141,15 @@ def test():
     save_path = '../data/openEDS/openEDS.npy'
 
     transformations = [
-        Crop_top(50), # centers the image better
+        Crop_top(20), # centers the image better
         RandomCrop(20),
         Crop((256, 256)),
-        Rotate(20),
+        Rotate(40),
         Normalize(0, 1),
         Noise(0.6),
     ]
 
-    loader = OpenEDSLoader(root, batch_size=32, shuffle=True, max_videos=30, save_path=save_path, save_anyway=False,
+    loader = OpenEDSLoader(root, batch_size=32, shuffle=True, max_videos=None, save_path=save_path, save_anyway=True,
                            transformations=transformations)
 
     train, _, _ = loader.get_loaders()
