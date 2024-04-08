@@ -149,7 +149,7 @@ def test():
         Noise(0.6),
     ]
 
-    loader = OpenEDSLoader(root, batch_size=32, shuffle=True, max_videos=None, save_path=save_path, save_anyway=True,
+    loader = OpenEDSLoader(root, batch_size=32, shuffle=True, max_videos=None, save_path=save_path, save_anyway=False,
                            transformations=transformations)
 
     train, _, _ = loader.get_loaders()

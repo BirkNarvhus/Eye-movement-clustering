@@ -119,7 +119,7 @@ if __name__ == '__main__':
 
     train_loader, test_loader, _ = loader.get_loaders()
 
-    model = Encoder_classifier(layerfac, data_size, output_size)
+    model = Encoder_classifier(layerfac, data_size, output_size, hidden_encoder_pro=600, hidden_linear_features=1000)
     model.to(device)
 
     optimizer = LARS(
