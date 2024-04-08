@@ -36,8 +36,9 @@ class Encoder(nn.Module):
             for buffer_index, layer in enumerate(self.convLayers):
                 if len(stream_buffer[buffer_index]) > 0:
                     x = torch.cat([stream_buffer[buffer_index], x], 2)
+                else:
+                    x = torch.cat([torch.zeros_like(x[:, :, : 3, :, :]), x], 2)
                 stream_buffer[buffer_index] = x[:, :, -3:, :, :]
-
                 if len(buffer) == 0:
                     x = layer(x)[:, :, -10:, :, :]
                 else:
