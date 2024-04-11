@@ -26,7 +26,7 @@ def train(model, train_loader, optimizer, loss_function, device, log_interval, e
         x = x.to(device=device, dtype=torch.float)
         optimizer.zero_grad()
         z = model(x)
-        loss = loss_function(x, z)
+        loss = loss_function(z, x)
         loss.backward()
         optimizer.step()
         train_loss += loss.item()
@@ -46,7 +46,7 @@ def main():
     model = AutoEncoder(input_channels, 3, 1)
     model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    loss_function = nn.BCEWithLogitsLoss()
+    loss_function = nn.HuberLoss()
 
     for epoch in range(1, epochs + 1):
         train(model, train_loader, optimizer, loss_function, device, log_interval, epoch)

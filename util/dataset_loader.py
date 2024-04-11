@@ -9,10 +9,11 @@ from util.transformations import *
 
 
 class Loader:
-    def __init__(self, data, batch_size=32, transformations=None):
+    def __init__(self, data, batch_size=32, transformations=None, sim_clr=False):
         self.data = data
         self.batch_size = batch_size
         self.currBatch = 0
+        self.sim_clr = sim_clr
 
         self.transformations = transformations
 
@@ -37,7 +38,9 @@ class Loader:
         if self.currBatch + self.batch_size < len(self.data):
             bach = self.get_batch()
             return (torch.tensor(numpy.expand_dims(self.apply_transformation(bach), axis=1), dtype=torch.float32),
-                    torch.tensor(numpy.expand_dims(self.apply_transformation(bach), axis=1), dtype=torch.float32))
+                    torch.tensor(numpy.expand_dims(self.apply_transformation(bach), axis=1),
+                                 dtype=torch.float32)) if self.sim_clr else \
+                (torch.tensor(numpy.expand_dims(self.apply_transformation(bach), axis=1), dtype=torch.float32))
         else:
             raise StopIteration
 
@@ -57,8 +60,10 @@ class Loader:
     def __len__(self):
         return len(self.data) // self.batch_size
 
+
 class OpenEDSLoader:
-    def __init__(self, root, batch_size=32, shuffle=True, max_videos=None, save_path=None, save_anyway=False, transformations=None):
+    def __init__(self, root, batch_size=32, shuffle=True, max_videos=None, save_path=None, save_anyway=False,
+                 transformations=None, sim_clr=False):
         self.root = root
         self.videos = (os.listdir(root))[2:]
         self.max_videos = max_videos
@@ -71,9 +76,12 @@ class OpenEDSLoader:
         if shuffle:
             self.shuffle()
 
-        self.test = Loader((self.data[int(len(self.data) * 0.8):]), batch_size=self.batch_size, transformations=transformations)
-        self.train = Loader(self.data[:int(len(self.data) * 0.8)], batch_size=self.batch_size, transformations=transformations)
-        self.valid = Loader(self.data[int(len(self.data) * 0.8):], batch_size=self.batch_size, transformations=transformations)
+        self.test = Loader((self.data[int(len(self.data) * 0.8):]), batch_size=self.batch_size,
+                           transformations=transformations, sim_clr=sim_clr)
+        self.train = Loader(self.data[:int(len(self.data) * 0.8)], batch_size=self.batch_size,
+                            transformations=transformations, sim_clr=sim_clr)
+        self.valid = Loader(self.data[int(len(self.data) * 0.8):], batch_size=self.batch_size,
+                            transformations=transformations, sim_clr=sim_clr)
 
         self.data = None
 
@@ -141,7 +149,7 @@ def test():
     save_path = '../data/openEDS/openEDS.npy'
 
     transformations = [
-        Crop_top(20), # centers the image better
+        Crop_top(20),  # centers the image better
         RandomCrop(20),
         Crop((256, 256)),
         Rotate(40),

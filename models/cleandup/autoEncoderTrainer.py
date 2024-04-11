@@ -1,4 +1,6 @@
 import os
+
+from torch import nn
 from tqdm import tqdm
 import numpy as np
 import torch
@@ -7,11 +9,11 @@ import warnings
 
 
 import sys
+
+from models.cleandup.EncoderDecoder import EncoderDecoder
+
 sys.path.append('C:\\Users\\vizlab_stud\\Documents\\pythonProjects\\eye-movement-classification')
 
-from models.cleandup.encoderClassifer import Encoder_classifier
-from models.larsOptim import LARS
-from models.simClrLoss import SimCLR_Loss
 from util.checkpointsLogging import CheckpointUtil
 from util.dataset_loader import OpenEDSLoader
 from util.layerFactory import LayerFactory
@@ -25,8 +27,13 @@ device = "cpu"
 if torch.cuda.is_available():
     device = "cuda:0"
 
-root = 'data/openEDS/openEDS'
-save_path = 'data/openEDS/openEDS.npy'
+relative_path = "../../"
+
+
+root = relative_path + 'data/openEDS/openEDS'
+save_path = relative_path + 'data/openEDS/openEDS.npy'
+
+
 
 batch_size = 16
 log_interval = 2
@@ -34,13 +41,16 @@ lr = 0.00001
 n_epochs = 1
 steps = 0
 max_batches = 0  # all if 0
-lossfunction = SimCLR_Loss(batch_size, 0.5)
+lossfunction = nn.HuberLoss()
 
-arc_filename = "content/Arc/model_3.csv"
+arc_filename_enc = relative_path + "content/Arc/model_3.csv"
+arc_filename_dec = relative_path + "content/Arc/model_3_reverse.csv"
 
-checkpoint_dir = 'content/saved_models/clr_checkpoints/' + arc_filename.split('/')[2].split('.')[0]
-output_dir = 'content/saved_outputs/'
+model_name = arc_filename_enc.split('/')[2].split('.')[0] + "auto_encoder"
 
+checkpoint_dir = relative_path + 'content/saved_models/clr_checkpoints/' + model_name
+output_dir = relative_path + 'content/saved_outputs/'
+'''
 transformations = [
     TempStride(2),
     Crop_top(20),  # centers the image better
@@ -50,22 +60,31 @@ transformations = [
     Normalize(0, 1),
     Noise(0.3),
 ]
-data_size = 256
-output_size = 744
+'''
+transformations = [
+    TempStride(2),
+    Crop_top(20),  # centers the image better
+    Crop((256, 256))
+]
 
 layerfac = LayerFactory()
 
-model_name = arc_filename.split('/')[2].split('.')[0]
 
-layerfac.read_from_file(arc_filename, full_block_res=True, res_interval=3)
+layerfac.read_from_file(arc_filename_enc, full_block_res=True, res_interval=2)
+layers_enc = layerfac.generate_layer_array()
+
+
+layerfac.read_from_file(arc_filename_dec, full_block_res=True, res_interval=2)
+layers_dec = layerfac.generate_layer_array()
 
 loader = OpenEDSLoader(root, batch_size=batch_size, shuffle=True, max_videos=None, save_path=save_path,
                        save_anyway=False,
-                       transformations=transformations, sim_clr=True)
+                       transformations=transformations, sim_clr=False)
 
 train_loader, test_loader, _ = loader.get_loaders()
 
-model = Encoder_classifier(layerfac, data_size, output_size, hidden_encoder_pro=600, hidden_linear_features=1000)
+
+model = EncoderDecoder(layers_enc, layers_dec, 216, 216)
 
 optimizer = torch.optim.Adam(
     [params for params in model.parameters() if params.requires_grad],
@@ -91,17 +110,14 @@ def test(test_loader, model):
     test_loss = 0
     with torch.no_grad():
         idx = 0
-        for x_i, x_j in test_loader:
+        for x in test_loader:
             idx += 1
-            x_i = x_i.to(device=device, dtype=torch.float)
-            x_j = x_j.to(device=device, dtype=torch.float)
+            x = x.to(device=device, dtype=torch.float)
 
-            z_i = model(x_i)
-            if len(z_i) != batch_size:
+            z = model(x)
+            if len(z) != batch_size:
                 break
-
-            z_j = model(x_j)
-            loss = lossfunction(z_i, z_j)
+            loss = lossfunction(x, z)
             test_loss += loss.item()
         if idx == 0:
             return test_loss
@@ -116,7 +132,7 @@ def plot_features(model, num_feats, batch_size, loader, name="test"):
     model.eval()
     print("extracting features...")
     with torch.no_grad():
-        for idx, (x1, _) in tqdm(enumerate(loader)):
+        for idx, x1 in tqdm(enumerate(loader)):
             x1 = x1.to(device=device, dtype=torch.float)
             out = model(x1)
             if len(out) != batch_size:
@@ -150,13 +166,11 @@ if __name__ == '__main__':
         print()
         train_loss = 0
         model.train()
-        for idx, (x_i, x_j) in enumerate(train_loader):
+        for idx, x_i in enumerate(train_loader):
             x_i = x_i.to(device, dtype=torch.float)
-            x_j = x_j.to(device, dtype=torch.float)
 
             z_i = model(x_i)
-            z_j = model(x_j)
-            loss = loss_fn(z_i, z_j)
+            loss = loss_fn(x_i, z_i)
 
             optimizer.zero_grad()
             loss.backward()

@@ -47,11 +47,11 @@ def main():
     hidden_size = 64*7*7
     layers = ((16, 32, 2, 1, 1, 5), (32, 64, 1, 1, 1, 5), (64, 64, 1, 1, 1, 5))
 
-    model = AutoEncoder(input_channels, hidden_size, (64, 7, 7), decoder_output_channels=1, layers=layers)
+    model = AutoEncoder(layers=layers)
 
     model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    loss_function = nn.BCEWithLogitsLoss()
+    loss_function = nn.CrossEntropyLoss()
 
     for epoch in range(1, epochs + 1):
         train(model, train_loader, optimizer, loss_function, device, log_interval, epoch)

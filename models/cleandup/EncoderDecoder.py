@@ -6,6 +6,20 @@ from util.layerFactory import LayerFactory
 from util.modelUtils import get_n_params
 
 
+class SmoothenGradiantWithHubertLoss(nn.Module):
+    def __init__(self, loss, beta=0.1):
+        super(SmoothenGradiantWithHubertLoss, self).__init__()
+        self.loss = loss
+        self.beta = beta
+
+    def forward(self, x, y):
+        loss = self.loss(x, y)
+        x = x.view(-1)
+        y = y.view(-1)
+        diff = torch.abs(x - y)
+        loss = torch.mean(loss + self.beta * diff)
+        return loss
+
 class DilationBottleneck(nn.Module):
     def __init__(self, dil_factors=(1, 2, 4, 8), kernel=(3, 3, 3), in_channels=1, out_channels=1):
         super(DilationBottleneck, self).__init__()
@@ -25,10 +39,9 @@ class DilationBottleneck(nn.Module):
             if sum_output is None:
                 sum_output = x
             else:
-                sum_output += x
+                sum_output = torch.add(sum_output, x)
             x = layer(x)
-        x = sum_output + x
-        return x
+        return torch.add(sum_output, x)
 
 
 class Decoder(nn.Module):
@@ -60,12 +73,11 @@ class Decoder(nn.Module):
                 self.convLayers.append(MultiResLayer([[y[0] for y in x] for x in layer],
                                                      kernels_size=[[y[1] for y in x] for x in layer], causel=False))
 
-            print("Layer ", i, " ", layer_type, " ", len(self.convLayers))
-
-        self.net = nn.Sequential(*self.convLayers)
+        self.net = nn.Sequential(*self.convLayers, nn.Conv3d(1, 1, (5, 1, 1),
+                                                             stride=(1, 1, 1), padding=0))
 
     def forward(self, x):
-        return self.net(x)[..., 2:-2, :, :]
+        return self.net(x)
 
 
 class Unsqeeze(nn.Module):
@@ -74,7 +86,7 @@ class Unsqeeze(nn.Module):
         self.dim = dim
 
     def forward(self, x):
-        return x.unsqueeze(self.dim)
+        return torch.unsqueeze(x, self.dim)
 
 
 class EncoderDecoder(nn.Module):
@@ -91,9 +103,7 @@ class EncoderDecoder(nn.Module):
         self.net = nn.Sequential(self.init_down_size, self.encoder, self.bottleneck,  self.cgp, self.unsq, self.decoder)
 
     def forward(self, x):
-        for layer in self.net:
-            print(x.shape)
-            x = layer(x)
+        x = self.net(x)
         return x
 
 
@@ -126,18 +136,19 @@ def test():
     lay_fac.read_from_file(relative_path + "model_3_reverse.csv")
     layers_dec = lay_fac.generate_layer_array()
 
-    '''
-    decoder = Decoder(layers)
-    bottle_neck_output = torch.rand((8, 744, 1, 8, 8))
+    lay_fac.read_from_file(relative_path + "model_3.csv")
+    layers_enc = lay_fac.generate_layer_array()
+    print(layers_enc)
+
+
+    decoder = Decoder(layers_dec)
+    bottle_neck_output = torch.rand((8, 216, 1, 8, 8))
 
     x = decoder(bottle_neck_output)
     print(bottle_neck_output.shape, x.shape)
     print("num params ", get_n_params(decoder))
-    '''
 
-    lay_fac.read_from_file(relative_path + "model_3.csv")
-    layers_enc = lay_fac.generate_layer_array()
-    print(layers_enc)
+
 
     model = EncoderDecoder(layers_enc, layers_dec, 216, 216)
 
