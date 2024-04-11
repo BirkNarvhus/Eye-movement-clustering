@@ -97,9 +97,9 @@ class Encoder_classifier(nn.Module):
 def test():
     layerfac = LayerFactory()
 
-    filename = "Arc/model_3.csv"
-
-    layerfac.read_from_file(filename, full_block_res=True, res_interval=2)
+    filename = "Arc/model_1.csv"
+    relative_path = "../../content/"
+    layerfac.read_from_file(relative_path + filename, full_block_res=True, res_interval=2)
 
     #name = layerfac.add_layer("down", pool_type="down")
     #layerfac.add_residual_block(name, ((16, 128), (128, 64), (64, 32)), ((3, 3, 3), (3, 3, 3), (3, 3, 3)))

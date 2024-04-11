@@ -33,8 +33,13 @@ class LayerFactory:
         layer_array = []
         for layer in self.layers:
             reslayer = []
+            reslayer.append(self.layers[layer]["pool_type"])
             for key in self.layers[layer].keys():
-                reslayer.append(list(zip(self.layers[layer][key]["channels"], self.layers[layer][key]["kernels_size"])))
+                if key == "pool_type":
+                    pass
+                else:
+                    reslayer.append(
+                        list(zip([x[::-1] for x in self.layers[layer][key]["channels"]], self.layers[layer][key]["kernels_size"])))
             layer_array.insert(0, reslayer)
         return layer_array
 
@@ -44,6 +49,7 @@ class LayerFactory:
         return upscale_factor, feature_size_last_layer
 
     def read_from_file(self, filename, full_block_res=False, res_interval=3):
+        self.reset()
         print("Loading model from file: ", filename)
         kernels = []
         channels = []
@@ -54,12 +60,12 @@ class LayerFactory:
                 if l == "\n":
                     continue
                 l = l.replace("\n", "")
-                if l == "down" or l == "none":
+                if l == "down" or l == "none" or l == "up" or l == "temp_up":
                     if len(kernels) != 0:
                         self.add_residual_block(layer_name, channels, kernels)
                         kernels = []
                         channels = []
-                    layer_name = self.add_layer("down", pool_type=l)
+                    layer_name = self.add_layer("layer", pool_type=l)
                     pass
                 else:
                     l = l.split(",")
@@ -95,6 +101,18 @@ class LayerFactory:
                 del self.layers[layer]["pool_type"]
                 for block in self.layers[layer]:
                     for channel, kernel in zip(self.layers[layer][block]["channels"], self.layers[layer][block]["kernels_size"]):
+                        f.write(str(kernel[0]) + "," + str(kernel[1]) + "," + str(kernel[2]) + "," + str(channel[0]) + "," + str(channel[1]) + "\n")
+
+    def revere_and_write_to_file(self, filename):
+        layer_array = self.generate_reverse_layer_array()
+        with open(filename, 'w') as f:
+            for layer in layer_array:
+                if layer[0] == "down":
+                    layer[0] = "up"
+                if layer[0] == "up" or layer[0] == "none":
+                    f.write(layer[0] + "\n")
+                for block in layer[1:]:
+                    for channel, kernel in block:
                         f.write(str(kernel[0]) + "," + str(kernel[1]) + "," + str(kernel[2]) + "," + str(channel[0]) + "," + str(channel[1]) + "\n")
     def reset(self):
         self.layers = {}

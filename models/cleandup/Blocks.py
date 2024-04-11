@@ -20,22 +20,28 @@ class Chomp1d(nn.Module):
 
 
 class TempConvBlock(nn.Module):
-    def __init__(self, input_channels, output_channels, kernel_size=(3, 3, 3), stride=1, padding=1, dilation_size=1):
+    def __init__(self, input_channels, output_channels, kernel_size=(3, 3, 3), stride=1, padding=1, dilation_size=1, causel=True):
         super(TempConvBlock, self).__init__()
 
-        zero_padding = (0, kernel_size[1] // 2, kernel_size[2] // 2)
-        self.conv = nn.Conv3d(input_channels, output_channels, kernel_size=(1, kernel_size[1], kernel_size[2]),
-                              stride=stride, padding=zero_padding)
+        zero_padding = (0 if causel else kernel_size[0] // 2, kernel_size[1] // 2, kernel_size[2] // 2)
 
-        padding_to_chomp = (kernel_size[0] - 1) * dilation_size
+        if causel:
+            self.conv = nn.Conv3d(input_channels, output_channels, kernel_size=(1, kernel_size[1], kernel_size[2]),
+                                  stride=stride, padding=zero_padding)
 
-        if kernel_size[0] != 1:
-            self.chomp = Chomp1d(padding_to_chomp)
-            self.temp_Conv = nn.Conv3d(output_channels, output_channels, kernel_size=(kernel_size[0], 1, 1),
-                                       stride=(stride, 1, 1),
-                                       padding=(padding_to_chomp, 0, 0), dilation=dilation_size)
-            self.net = nn.Sequential(self.conv, self.temp_Conv, self.chomp)
+            padding_to_chomp = (kernel_size[0] - 1) * dilation_size
+
+            if kernel_size[0] != 1:
+                self.chomp = Chomp1d(padding_to_chomp)
+                self.temp_Conv = nn.Conv3d(output_channels, output_channels, kernel_size=(kernel_size[0], 1, 1),
+                                           stride=(stride, 1, 1),
+                                           padding=(padding_to_chomp, 0, 0), dilation=dilation_size)
+                self.net = nn.Sequential(self.conv, self.chomp, self.temp_Conv)
+            else:
+                self.net = nn.Sequential(self.conv)
         else:
+            self.conv = nn.Conv3d(input_channels, output_channels, kernel_size=kernel_size, stride=stride,
+                                  padding=zero_padding, dilation=dilation_size)
             self.net = nn.Sequential(self.conv)
 
     def forward(self, x):
@@ -52,7 +58,8 @@ class Projection(nn.Module):
 
 
 class ResBlock(nn.Module):
-    def __init__(self, channels=((64, 128), (128, 64)), kernels_size=((3, 3, 3), (3, 3, 3)), stride=1, padding=1):
+    def __init__(self, channels=((64, 128), (128, 64)), kernels_size=((3, 3, 3), (3, 3, 3)), stride=1, padding=1,
+                 dilation=1,  causel=True):
         super(ResBlock, self).__init__()
 
         modList = nn.ModuleList()
@@ -64,7 +71,7 @@ class ResBlock(nn.Module):
                     modList.append(Projection((channels[i - 1][1], channels[i][0])))
 
             modList.append(TempConvBlock(channels[i][0], channels[i][1], kernel_size=kernels_size[i], stride=stride,
-                                         padding=padding))
+                                         padding=padding, causel=causel, dilation_size=dilation))
             modList.append(self.relu)
             modList.append(nn.BatchNorm3d(channels[i][1]))
             modList.append(nn.Dropout(0.2))
@@ -78,12 +85,13 @@ class ResBlock(nn.Module):
         x = self.net(x)
         if self.projection:
             res = self.projection(res)
+
         return self.relu(x + res)
 
 
 class MultiResLayer(nn.Module):
     def __init__(self, channels, kernels_size=(((3, 3, 3), (3, 3, 3), (3, 3, 3)), ((3, 3, 3), (3, 3, 3), (3, 3, 3))),
-                 stride=1, padding=1):
+                 stride=1, padding=1, dilation=1, causel=True):
         super(MultiResLayer, self).__init__()
 
         if len(channels) != len(kernels_size):
@@ -97,7 +105,7 @@ class MultiResLayer(nn.Module):
             if i != 0:
                 if channels[i - 1][-1][-1] != channels[i][0][0]:
                     self.res_blocks.append(Projection((channels[i - 1][-1][-1], channels[i][0][0])))
-            self.res_blocks.append(ResBlock(channels[i], kernels_size[i], stride, padding))
+            self.res_blocks.append(ResBlock(channels[i], kernels_size[i], stride, padding, dilation, causel))
 
         self.net = nn.Sequential(*self.res_blocks)
 
@@ -117,12 +125,21 @@ class DownsampleLayer(nn.Module):
         return self.net(x)
 
 
-class UpsampleLayer(nn.Module):
-    def __init__(self, channels, kernels_size=((3, 3, 3), (3, 3, 3), (3, 3, 3)), stride=1, padding=1):
-        super(UpsampleLayer, self).__init__()
-        self.upsample = nn.Upsample(scale_factor=(1, 2, 2), mode='trilinear')
+class temp_upsample(nn.Module):
+    def __init__(self, in_channels, kernel_size=(2, 1, 1), stride=1):
+        super(temp_upsample, self).__init__()
+        self.conv = nn.ConvTranspose3d(in_channels, in_channels, kernel_size=kernel_size, stride=stride)
 
-        self.resBlockLayers = MultiResLayer(channels, kernels_size, stride, padding)
+    def forward(self, x):
+        return self.conv(x)
+
+
+class UpsampleLayer(nn.Module):
+    def __init__(self, channels, kernels_size=((3, 3, 3), (3, 3, 3), (3, 3, 3)), stride=1, padding=1,
+                 upscale_kernel=(2, 2, 2), causel=False):
+        super(UpsampleLayer, self).__init__()
+        self.upsample = nn.Upsample(scale_factor=upscale_kernel, mode='trilinear')
+        self.resBlockLayers = MultiResLayer(channels, kernels_size, stride, padding, causel=causel)
 
         self.net = nn.Sequential(self.upsample, self.resBlockLayers)
 
