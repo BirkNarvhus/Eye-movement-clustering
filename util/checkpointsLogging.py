@@ -1,5 +1,6 @@
 import os
 import shutil
+import sys
 
 import torch
 
@@ -42,3 +43,26 @@ class CheckpointUtil:
         else:
             print("=> no checkpoint found at '{}'".format(filename))
             return model, optimizer, 0, 100, 100
+
+    def load_checkpoint_stats(self, checkpoint_name):
+        filename = self.checkpoint_dir + "/" + checkpoint_name
+        if os.path.isfile(filename):
+            print("=> loading checkpoint '{}'".format(filename))
+            checkpoint = torch.load(filename)
+            epoch = checkpoint['epoch']
+            best_loss = checkpoint['best_loss']
+            loss = checkpoint['loss']
+            test_loss = checkpoint['test_loss']
+            return {'epoch': epoch, 'best_loss': best_loss, 'loss': loss, 'test_loss': test_loss}
+
+
+def load_checkpoint_stats(checkpoint_dir, name):
+    checkpoint_util = CheckpointUtil(checkpoint_dir)
+    print(checkpoint_util.load_checkpoint_stats(name))
+
+
+if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        print("Usage: python checkpointsLogging.py <checkpoint_dir> <checkpoint_name>")
+        sys.exit(1)
+    load_checkpoint_stats(sys.argv[1], sys.argv[2])

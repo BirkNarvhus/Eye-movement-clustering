@@ -27,12 +27,11 @@ device = "cpu"
 if torch.cuda.is_available():
     device = "cuda:0"
 
-relative_path = "../../"
+relative_path = ""
 
 
 root = relative_path + 'data/openEDS/openEDS'
 save_path = relative_path + 'data/openEDS/openEDS.npy'
-
 
 
 batch_size = 16
@@ -49,7 +48,7 @@ arc_filename_dec = relative_path + "content/Arc/model_3_reverse.csv"
 model_name = arc_filename_enc.split('/')[2].split('.')[0] + "auto_encoder"
 
 checkpoint_dir = relative_path + 'content/saved_models/clr_checkpoints/' + model_name
-output_dir = relative_path + 'content/saved_outputs/'
+output_dir = relative_path + 'content/saved_outputs/autoEnc/'
 '''
 transformations = [
     TempStride(2),
@@ -127,28 +126,6 @@ def test(test_loader, model):
         return test_loss
 
 
-def plot_features(model, num_feats, batch_size, loader, name="test"):
-    feats = np.array([]).reshape((0, num_feats))
-    model.eval()
-    print("extracting features...")
-    with torch.no_grad():
-        for idx, x1 in tqdm(enumerate(loader)):
-            x1 = x1.to(device=device, dtype=torch.float)
-            out = model(x1)
-            if len(out) != batch_size:
-                break
-            out = out.cpu().data.numpy()
-            if feats.shape[0] > 0:
-                feats = np.append(feats, out, axis=0)
-            else:
-                feats = out
-
-        with open(output_dir + '{}-feats.npy'.format(model_name), 'wb') as f:
-            np.save(f, feats)
-    plt_util = PlotUtil(feats, name, mode="PCA", root=output_dir)
-    plt_util.plot_tsne()
-
-
 if __name__ == '__main__':
     model.to(device)
 
@@ -206,7 +183,4 @@ if __name__ == '__main__':
             checkpoint_util.save_checkpoint(model, optimizer, epoch, train_loss, loss, best_loss, False)
     pytorch_total_params = sum(p.numel() for p in model.parameters())
     print('Number of params: {}'.format(pytorch_total_params))
-    print("Dim reducing and plotting...")
-    plot_features(model, 100, batch_size, loader=test_loader, name="test")
-    plot_features(model, 100, batch_size, loader=train_loader, name="train")
     print("Training finished. at {}".format(datetime.now().replace(microsecond=0)))

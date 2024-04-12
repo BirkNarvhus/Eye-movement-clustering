@@ -8,7 +8,7 @@ from util.plot_tsne import PlotUtil
 
 Out_folder = 'content/saved_outputs/'
 Output_file = Out_folder + 'kmeans_output.npy'
-input_file = 'content/saved_models/final/feats.npy'
+input_file = 'content/saved_outputs/model_1-feats.npy'
 do_plot = True
 
 class KMeansDownstream:
