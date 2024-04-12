@@ -47,7 +47,7 @@ arc_filename_dec = relative_path + "content/Arc/model_3_reverse.csv"
 
 model_name = arc_filename_enc.split('/')[2].split('.')[0] + "auto_encoder"
 
-checkpoint_dir = relative_path + 'content/saved_models/clr_checkpoints/' + model_name
+checkpoint_dir = relative_path + 'content/saved_models/autoEncHubertloss/' + model_name
 output_dir = relative_path + 'content/saved_outputs/autoEnc/'
 '''
 transformations = [
