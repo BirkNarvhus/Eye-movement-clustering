@@ -1,8 +1,4 @@
-import os
-
 from torch import nn
-from tqdm import tqdm
-import numpy as np
 import torch
 from datetime import datetime
 import warnings
@@ -10,10 +6,10 @@ import warnings
 
 import sys
 
-from models.cleandup.EncoderDecoder import EncoderDecoder
 
 sys.path.append('C:\\Users\\vizlab_stud\\Documents\\pythonProjects\\eye-movement-classification')
 
+from models.cleandup.EncoderDecoder import EncoderDecoder
 from util.checkpointsLogging import CheckpointUtil
 from util.dataset_loader import OpenEDSLoader
 from util.layerFactory import LayerFactory
@@ -34,10 +30,10 @@ root = relative_path + 'data/openEDS/openEDS'
 save_path = relative_path + 'data/openEDS/openEDS.npy'
 
 
-batch_size = 16
+batch_size = 10
 log_interval = 2
-lr = 0.00001
-n_epochs = 1
+lr = 0.001
+n_epochs = 10
 steps = 0
 max_batches = 0  # all if 0
 lossfunction = nn.HuberLoss()
@@ -63,7 +59,8 @@ transformations = [
 transformations = [
     TempStride(2),
     Crop_top(20),  # centers the image better
-    Crop((256, 256))
+    Crop((256, 256)),
+    Normalize(76.3, 41.7)
 ]
 
 layerfac = LayerFactory()
@@ -140,7 +137,7 @@ if __name__ == '__main__':
     best_loss_test = 1000000
     best_loss = 1000000
     for epoch in range(n_epochs):
-        print()
+        print("")
         train_loss = 0
         model.train()
         for idx, x_i in enumerate(train_loader):
@@ -159,8 +156,7 @@ if __name__ == '__main__':
 
                 current_time = datetime.now().replace(microsecond=0) - start_time
                 delta_time = datetime.now() - time0
-                predicted_finish = delta_time * (len(train_loader)) * (n_epochs - epoch + 1)
-                + delta_time * (len(train_loader) - (idx+1)) + current_time
+                predicted_finish = delta_time * (len(train_loader)) * (n_epochs - epoch - 1) + current_time
                 time_left = predicted_finish - current_time
 
                 print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\tSteps: {}\t{}s/it\tRunning Time: {} - {}\tTime left: {}'.format(

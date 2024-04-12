@@ -47,7 +47,7 @@ transformations = [
     RandomCrop(20),
     Crop((256, 256)),
     Rotate(30),
-    Normalize(0, 1),
+    Normalize(76.3, 41.7),
     Noise(0.3),
 ]
 data_size = 256

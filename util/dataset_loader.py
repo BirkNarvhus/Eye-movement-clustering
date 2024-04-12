@@ -153,12 +153,11 @@ def test():
         RandomCrop(20),
         Crop((256, 256)),
         Rotate(40),
-        Normalize(0, 1),
         Noise(0.6),
     ]
 
     loader = OpenEDSLoader(root, batch_size=32, shuffle=True, max_videos=None, save_path=save_path, save_anyway=False,
-                           transformations=transformations)
+                           transformations=transformations, sim_clr=True)
 
     train, _, _ = loader.get_loaders()
     batch = next(iter(train))
@@ -172,7 +171,11 @@ def test():
         ax[1, x].imshow(y_batch[0][0][10 + x].squeeze(), cmap='gray')
 
     plt.show()
+    del x_batch, y_batch, batch, train, loader
 
+    data = np.load(save_path)
+
+    print("mean:" + str(np.mean(data)) + "   STD:" + str(np.std(data)))
 
 if __name__ == '__main__':
     test()
