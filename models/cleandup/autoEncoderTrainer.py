@@ -31,9 +31,9 @@ save_path = relative_path + 'data/openEDS/openEDS.npy'
 
 
 batch_size = 8
-log_interval = 2
+log_interval = 1
 lr = 0.0001
-n_epochs = 10
+n_epochs = 20
 steps = 0
 max_batches = 0  # all if 0
 lossfunction = nn.MSELoss()
