@@ -14,6 +14,7 @@ class PlotUtil:
         self.mode = TSNE(n_components=2, random_state=0) if mode.upper() == "tsne".upper() else PCA(n_components=2)
         self.mode_name = mode
         self.root = root
+
     def plot_tsne(self, with_centers=False):
         X_2d = self.mode.fit_transform(self.data)
         plt.figure(figsize=(6, 5))

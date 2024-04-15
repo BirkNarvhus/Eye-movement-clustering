@@ -28,8 +28,8 @@ class CheckpointUtil:
         if is_best:
             shutil.copyfile(filename, self.checkpoint_dir + '/model_best_{}.pt.tar'.format(epoch))
 
-    def load_checkpoint(self, model, optimizer):
-        filename = self.checkpoint_dir + '/checkpoint.pt.tar'
+    def load_checkpoint(self, model, optimizer, check_point_name):
+        filename = self.checkpoint_dir + '/' + check_point_name
         if os.path.isfile(filename):
             print("=> loading checkpoint '{}'".format(filename))
             checkpoint = torch.load(filename)

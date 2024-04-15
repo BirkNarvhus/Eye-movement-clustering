@@ -1,6 +1,10 @@
 import torch
 from torch import nn
-from Blocks import DownsampleLayer, Cumulativ_global_pooling, Projection, MultiResLayer
+import sys
+
+sys.path.append('C:\\Users\\vizlab_stud\\Documents\\pythonProjects\\eye-movement-classification')
+
+from models.cleandup.Blocks import DownsampleLayer, Cumulativ_global_pooling, Projection, MultiResLayer
 from util.layerFactory import LayerFactory
 from util.modelUtils import get_n_params
 

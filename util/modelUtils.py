@@ -10,3 +10,4 @@ def get_n_params(model):
     size_all_mb = (param_size + buffer_size) / 1024 ** 2
     print('model size: {:.3f}MB'.format(size_all_mb))
     return param_size
+

@@ -1,7 +1,7 @@
 import torch
 from torch import nn
-from encoderClassifer import Encoder
-from Blocks import TempConvBlock, UpsampleLayer, MultiResLayer, Projection, Cumulativ_global_pooling
+from models.cleandup.encoderClassifer import Encoder
+from models.cleandup.Blocks import TempConvBlock, UpsampleLayer, MultiResLayer, Projection, Cumulativ_global_pooling
 from util.layerFactory import LayerFactory
 from util.modelUtils import get_n_params
 

@@ -30,20 +30,20 @@ root = relative_path + 'data/openEDS/openEDS'
 save_path = relative_path + 'data/openEDS/openEDS.npy'
 
 
-batch_size = 10
+batch_size = 8
 log_interval = 2
-lr = 0.001
+lr = 0.0001
 n_epochs = 10
 steps = 0
 max_batches = 0  # all if 0
-lossfunction = nn.HuberLoss()
+lossfunction = nn.MSELoss()
 
 arc_filename_enc = relative_path + "content/Arc/model_3.csv"
 arc_filename_dec = relative_path + "content/Arc/model_3_reverse.csv"
 
-model_name = arc_filename_enc.split('/')[2].split('.')[0] + "auto_encoder"
+model_name = arc_filename_enc.split('/')[2].split('.')[0] + "auto_encoder_mse"
 
-checkpoint_dir = relative_path + 'content/saved_models/autoEncHubertloss/' + model_name
+checkpoint_dir = relative_path + 'content/saved_models/autoEncMSEloss/' + model_name
 output_dir = relative_path + 'content/saved_outputs/autoEnc/'
 '''
 transformations = [
@@ -133,10 +133,10 @@ if __name__ == '__main__':
     checkpoint_util = CheckpointUtil(checkpoint_dir)
 
     print("Starting training at {}...".format(start_time))
-    time0 = datetime.now()
     best_loss_test = 1000000
     best_loss = 1000000
     for epoch in range(n_epochs):
+        time0 = datetime.now()
         print("")
         train_loss = 0
         model.train()

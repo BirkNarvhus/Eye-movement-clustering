@@ -28,7 +28,7 @@ if torch.cuda.is_available():
 root = 'data/openEDS/openEDS'
 save_path = 'data/openEDS/openEDS.npy'
 
-batch_size = 16
+batch_size = 8
 log_interval = 2
 lr = 0.00001
 n_epochs = 1
