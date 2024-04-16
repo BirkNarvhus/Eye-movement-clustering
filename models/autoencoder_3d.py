@@ -2,9 +2,6 @@ import numpy
 import numpy as np
 import torch
 from torch import nn
-from torchinfo import summary
-
-
 
 class Cumulativ_global_pooling(nn.Module):
     def __init__(self):
@@ -259,7 +256,6 @@ def test_encoder():
 
     #print('number of params: {}'.format(get_n_params(model)))
 
-    summary(model, (1, 1, 128, 400, 640))
 
 if __name__ == '__main__':
     test_encoder()

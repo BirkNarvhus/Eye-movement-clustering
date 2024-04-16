@@ -4,6 +4,7 @@ from models.cleandup.encoderClassifer import Encoder
 from models.cleandup.Blocks import TempConvBlock, UpsampleLayer, MultiResLayer, Projection, Cumulativ_global_pooling
 from util.layerFactory import LayerFactory
 from util.modelUtils import get_n_params
+from torchinfo import summary
 
 
 class SmoothenGradiantWithHubertLoss(nn.Module):
@@ -90,7 +91,8 @@ class Unsqeeze(nn.Module):
 
 
 class EncoderDecoder(nn.Module):
-    def __init__(self, encoder_layers, decoder_layers, bottleneck_input_channels, bottleneck_output_channels):
+    def __init__(self, encoder_layers, decoder_layers, bottleneck_input_channels, bottleneck_output_channels,
+                 remove_decoder=False):
         super(EncoderDecoder, self).__init__()
         self.init_down_size = nn.Conv3d(1, 16, (1, 1, 1), stride=(1, 2, 2), padding=0)
         self.encoder = Encoder(encoder_layers)
@@ -100,11 +102,13 @@ class EncoderDecoder(nn.Module):
         self.decoder = Decoder(decoder_layers)
         self.unsq = Unsqeeze(2)
 
-        self.net = nn.Sequential(self.init_down_size, self.encoder, self.bottleneck,  self.cgp, self.unsq, self.decoder)
+        if remove_decoder:
+            self.net = nn.Sequential(self.init_down_size, self.encoder, self.bottleneck, self.cgp)
+        else:
+            self.net = nn.Sequential(self.init_down_size, self.encoder, self.bottleneck,  self.cgp, self.unsq, self.decoder)
 
     def forward(self, x):
-        x = self.net(x)
-        return x
+        return self.net(x)
 
 
 def test():
@@ -140,23 +144,8 @@ def test():
     layers_enc = lay_fac.generate_layer_array()
     print(layers_enc)
 
-
-    decoder = Decoder(layers_dec)
-    bottle_neck_output = torch.rand((8, 216, 1, 8, 8))
-
-    x = decoder(bottle_neck_output)
-    print(bottle_neck_output.shape, x.shape)
-    print("num params ", get_n_params(decoder))
-
-
-
     model = EncoderDecoder(layers_enc, layers_dec, 216, 216)
-
-    x = torch.rand((8, 1, 60, 256, 256))
-
-    x = model(x)
-
-    print(x.shape)
+    print(summary(model, input_size=(8, 1, 60, 256, 256)))
 
 
 if __name__ == "__main__":
