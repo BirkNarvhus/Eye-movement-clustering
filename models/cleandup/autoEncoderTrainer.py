@@ -188,7 +188,7 @@ if __name__ == '__main__':
         print("Starting training run ", i + 1)
         print("Checkpoint dir: ", checkpoint_dir)
         main()
-        if i != training_runs - 1:
+        if i + 1 < training_runs:
             print("Resting optimizer for next run.")
             optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=1e-6)
 
