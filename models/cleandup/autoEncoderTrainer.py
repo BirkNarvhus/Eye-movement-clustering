@@ -13,8 +13,7 @@ from models.cleandup.EncoderDecoder import EncoderDecoder
 from util.checkpointsLogging import CheckpointUtil
 from util.dataset_loader import OpenEDSLoader
 from util.layerFactory import LayerFactory
-
-from util.plot_tsne import PlotUtil
+from util.modelUtils import load_auto_encoder
 from util.transformations import *
 
 warnings.simplefilter("ignore", UserWarning)
@@ -45,17 +44,8 @@ model_name = arc_filename_enc.split('/')[2].split('.')[0] + "auto_encoder_mse"
 
 checkpoint_dir = relative_path + 'content/saved_models/autoEncMSEloss/' + model_name
 output_dir = relative_path + 'content/saved_outputs/autoEnc/'
-'''
-transformations = [
-    TempStride(2),
-    Crop_top(20),  # centers the image better
-    RandomCrop(20),
-    Crop((256, 256)),
-    Rotate(30),
-    Normalize(0, 1),
-    Noise(0.3),
-]
-'''
+
+
 transformations = [
     TempStride(2),
     Crop_top(20),  # centers the image better
@@ -63,15 +53,6 @@ transformations = [
     Normalize(76.3, 41.7)
 ]
 
-layerfac = LayerFactory()
-
-
-layerfac.read_from_file(arc_filename_enc, full_block_res=True, res_interval=2)
-layers_enc = layerfac.generate_layer_array()
-
-
-layerfac.read_from_file(arc_filename_dec, full_block_res=True, res_interval=2)
-layers_dec = layerfac.generate_layer_array()
 
 loader = OpenEDSLoader(root, batch_size=batch_size, shuffle=True, max_videos=None, save_path=save_path,
                        save_anyway=False,
@@ -80,13 +61,7 @@ loader = OpenEDSLoader(root, batch_size=batch_size, shuffle=True, max_videos=Non
 train_loader, test_loader, _ = loader.get_loaders()
 
 
-model = EncoderDecoder(layers_enc, layers_dec, 216, 216)
-
-optimizer = torch.optim.Adam(
-    [params for params in model.parameters() if params.requires_grad],
-    lr=lr,
-    weight_decay=1e-6,
-)
+model, optimizer = load_auto_encoder(arc_filename_enc, arc_filename_dec, 216, 216, lr, torch.optim.Adam)
 
 '''
 optimizer = LARS(
