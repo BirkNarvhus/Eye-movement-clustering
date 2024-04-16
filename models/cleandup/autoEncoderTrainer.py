@@ -11,7 +11,7 @@ sys.path.append('C:\\Users\\vizlab_stud\\Documents\\pythonProjects\\eye-movement
 
 from util.testingUtils.checkpointsLogging import CheckpointUtil
 from util.dataset_loader import OpenEDSLoader
-from util.modelUtils import load_auto_encoder
+from util.load_auto_enc_util import load_auto_encoder
 from util.transformations import *
 
 warnings.simplefilter("ignore", UserWarning)
