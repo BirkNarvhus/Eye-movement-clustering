@@ -9,10 +9,8 @@ import sys
 
 sys.path.append('C:\\Users\\vizlab_stud\\Documents\\pythonProjects\\eye-movement-classification')
 
-from models.cleandup.EncoderDecoder import EncoderDecoder
-from util.checkpointsLogging import CheckpointUtil
+from util.testingUtils.checkpointsLogging import CheckpointUtil
 from util.dataset_loader import OpenEDSLoader
-from util.layerFactory import LayerFactory
 from util.modelUtils import load_auto_encoder
 from util.transformations import *
 

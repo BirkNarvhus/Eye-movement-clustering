@@ -3,9 +3,9 @@ import os
 import matplotlib.pyplot as plt
 
 import sys
-sys.path.append('C:\\Users\\vizlab_stud\\Documents\\pythonProjects\\eye-movement-classification')
+sys.path.append('/')
 
-from util.checkpointsLogging import CheckpointUtil
+from util.testingUtils.checkpointsLogging import CheckpointUtil
 
 
 def load_all_checkpoints(checkpoint_dir):

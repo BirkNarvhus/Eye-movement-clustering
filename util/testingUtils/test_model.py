@@ -3,12 +3,10 @@ import numpy as np
 import cv2
 import sys
 
-from matplotlib import pyplot as plt
-
-sys.path.append('C:\\Users\\vizlab_stud\\Documents\\pythonProjects\\eye-movement-classification')
+sys.path.append('/')
 
 from models.cleandup.EncoderDecoder import EncoderDecoder
-from util.checkpointsLogging import CheckpointUtil
+from util.testingUtils.checkpointsLogging import CheckpointUtil
 from util.dataset_loader import OpenEDSLoader
 from util.layerFactory import LayerFactory
 from util.transformations import Crop_top, TempStride, Crop, Normalize

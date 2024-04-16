@@ -1,4 +1,3 @@
-import os
 from tqdm import tqdm
 import numpy as np
 import torch
@@ -10,9 +9,8 @@ import sys
 sys.path.append('C:\\Users\\vizlab_stud\\Documents\\pythonProjects\\eye-movement-classification')
 
 from models.cleandup.encoderClassifer import Encoder_classifier
-from models.larsOptim import LARS
 from models.simClrLoss import SimCLR_Loss
-from util.checkpointsLogging import CheckpointUtil
+from util.testingUtils.checkpointsLogging import CheckpointUtil
 from util.dataset_loader import OpenEDSLoader
 from util.layerFactory import LayerFactory
 
