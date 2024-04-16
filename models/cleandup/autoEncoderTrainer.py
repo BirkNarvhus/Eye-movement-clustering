@@ -1,3 +1,5 @@
+import os
+
 from torch import nn
 import torch
 from datetime import datetime
@@ -29,7 +31,7 @@ save_path = relative_path + 'data/openEDS/openEDS.npy'
 
 batch_size = 8
 log_interval = 1
-lr = 0.0001
+lr = 0.0002
 n_epochs = 20
 steps = 0
 max_batches = 0  # all if 0
@@ -38,7 +40,7 @@ lossfunction = nn.MSELoss()
 arc_filename_enc = relative_path + "content/Arc/model_3.csv"
 arc_filename_dec = relative_path + "content/Arc/model_3_reverse.csv"
 
-model_name = arc_filename_enc.split('/')[2].split('.')[0] + "auto_encoder_mse"
+model_name = arc_filename_enc.split('/')[2].split('.')[0] + "_auto_encoder_mse_v2"
 
 checkpoint_dir = relative_path + 'content/saved_models/autoEncMSEloss/' + model_name
 output_dir = relative_path + 'content/saved_outputs/autoEnc/'
@@ -97,6 +99,15 @@ def test(test_loader, model):
 
 
 if __name__ == '__main__':
+
+    if len(sys.argv) > 2:
+        load_file_path = sys.argv[1]
+        load_file_dir_path = os.path.dirname(load_file_path)
+        load_file_name = os.path.basename(load_file_path)
+        print("Loading model checkpoint from: ", load_file_path)
+        checkpoint_util = CheckpointUtil(load_file_dir_path)
+        model, optimizer, _, _, _ = checkpoint_util.load_checkpoint(model, optimizer, load_file_name)
+
     model.to(device)
 
     loss_fn = lossfunction
@@ -109,10 +120,13 @@ if __name__ == '__main__':
     best_loss_test = 1000000
     best_loss = 1000000
     for epoch in range(n_epochs):
-        time0 = datetime.now()
+        print("")
+
+        print("Epoch: ", epoch, "/", n_epochs - 1, " at ", datetime.now().replace(microsecond=0), "...")
         print("")
         train_loss = 0
         model.train()
+        time0 = datetime.now()
         for idx, x_i in enumerate(train_loader):
             x_i = x_i.to(device, dtype=torch.float)
 
@@ -146,10 +160,9 @@ if __name__ == '__main__':
         if train_loss < best_loss:
             best_loss = train_loss
 
-        if (loss == best_loss or train_loss == best_loss) and epoch > 0:
-            checkpoint_util.save_checkpoint(model, optimizer, epoch, train_loss, loss, best_loss, True)
-        elif epoch % log_interval == 0 and epoch > 0 or epoch == n_epochs - 1:
+        if epoch % log_interval == 0 and epoch > 0 or epoch == n_epochs - 1:
             checkpoint_util.save_checkpoint(model, optimizer, epoch, train_loss, loss, best_loss, False)
+
     pytorch_total_params = sum(p.numel() for p in model.parameters())
     print('Number of params: {}'.format(pytorch_total_params))
     print("Training finished. at {}".format(datetime.now().replace(microsecond=0)))
