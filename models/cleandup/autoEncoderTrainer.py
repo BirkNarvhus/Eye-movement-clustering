@@ -191,6 +191,11 @@ if __name__ == '__main__':
         if i + 1 < training_runs:
             print("Resting optimizer for next run.")
             optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=1e-6)
+            loader = OpenEDSLoader(root, batch_size=batch_size, shuffle=True, max_videos=None, save_path=save_path,
+                                   save_anyway=False,
+                                   transformations=transformations, sim_clr=False)
+
+            train_loader, test_loader, _ = loader.get_loaders()
 
 
 
