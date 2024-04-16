@@ -101,14 +101,16 @@ class EncoderDecoder(nn.Module):
         self.cgp = Cumulativ_global_pooling()
         self.decoder = Decoder(decoder_layers)
         self.unsq = Unsqeeze(2)
+        self.remove_decoder = remove_decoder
+        self.encoder = nn.Sequential(self.init_down_size, self.encoder, self.bottleneck, self.cgp)
 
-        if remove_decoder:
-            self.net = nn.Sequential(self.init_down_size, self.encoder, self.bottleneck, self.cgp)
-        else:
-            self.net = nn.Sequential(self.init_down_size, self.encoder, self.bottleneck,  self.cgp, self.unsq, self.decoder)
+        self.decoder = nn.Sequential(self.unsq, self.decoder)
 
     def forward(self, x):
-        return self.net(x)
+        x = self.encoder(x)
+        if self.remove_decoder:
+            return x
+        return self.decoder(x)
 
 
 def test():
@@ -137,15 +139,15 @@ def test():
 
     relative_path = "../../content/Arc/"
     lay_fac = LayerFactory()
-    lay_fac.read_from_file(relative_path + "model_3_reverse.csv")
+    lay_fac.read_from_file(relative_path + "model_3_reverse.csv", full_block_res=True, res_interval=2)
     layers_dec = lay_fac.generate_layer_array()
 
-    lay_fac.read_from_file(relative_path + "model_3.csv")
+    lay_fac.read_from_file(relative_path + "model_3.csv", full_block_res=True, res_interval=2)
     layers_enc = lay_fac.generate_layer_array()
     print(layers_enc)
 
     model = EncoderDecoder(layers_enc, layers_dec, 216, 216)
-    print(summary(model, input_size=(8, 1, 60, 256, 256)))
+    print(summary(model, input_size=(8, 1, 60, 256, 256), depth=10))
 
 
 if __name__ == "__main__":
