@@ -28,7 +28,7 @@ class CheckpointUtil:
         if is_best:
             shutil.copyfile(filename, self.checkpoint_dir + '/model_best_{}.pt.tar'.format(epoch))
 
-    def load_checkpoint(self, model, optimizer, check_point_name):
+    def load_checkpoint(self, model, optimizer, check_point_name, reset_optimizer=False):
         filename = self.checkpoint_dir + '/' + check_point_name
         if os.path.isfile(filename):
             print("=> loading checkpoint '{}'".format(filename))
@@ -37,7 +37,9 @@ class CheckpointUtil:
             best_loss = checkpoint['best_loss']
             loss = checkpoint['loss']
             model.load_state_dict(checkpoint['state_dict'])
-            optimizer.load_state_dict(checkpoint['optimizer'])
+            if not reset_optimizer:
+                optimizer.load_state_dict(checkpoint['optimizer'])
+
             print("=> loaded checkpoint '{}' (epoch {})".format(filename, checkpoint['epoch']))
             return model, optimizer, epoch, best_loss, loss
         else:

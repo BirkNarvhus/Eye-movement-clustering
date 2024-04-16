@@ -106,7 +106,8 @@ if __name__ == '__main__':
         load_file_name = os.path.basename(load_file_path)
         print("Loading model checkpoint from: ", load_file_path)
         checkpoint_util = CheckpointUtil(load_file_dir_path)
-        model, optimizer, _, _, _ = checkpoint_util.load_checkpoint(model, optimizer, load_file_name)
+        model, optimizer, _, _, _ = checkpoint_util.load_checkpoint(model, optimizer, load_file_name,
+                                                                    reset_optimizer=True)
 
     model.to(device)
 
@@ -158,19 +159,15 @@ if __name__ == '__main__':
 
         test_loss_buffer.append(loss)
 
-
-        if loss < best_loss_test:
-            best_loss_test = loss
-
         if train_loss < best_loss:
             best_loss = train_loss
 
         if epoch % log_interval == 0 and epoch > 0 or epoch == n_epochs - 1:
             checkpoint_util.save_checkpoint(model, optimizer, epoch, train_loss, loss, best_loss, False)
 
-        if len(test_loss_buffer) >= 4:
+        if len(test_loss_buffer) >= 5:
             if test_loss_buffer[-1] > test_loss_buffer[-2] > test_loss_buffer[-3] > test_loss_buffer[-4]:
-                print("Test loss has not improved for 4 epochs. Stopping training.")
+                print("Test loss has not improved for 5 epochs. Stopping training.")
                 break
             test_loss_buffer.pop(0)
 
