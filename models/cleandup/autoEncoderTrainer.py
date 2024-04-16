@@ -32,7 +32,7 @@ save_path = relative_path + 'data/openEDS/openEDS.npy'
 batch_size = 8
 log_interval = 1
 lr = 0.0002
-n_epochs = 20
+n_epochs = 40
 steps = 0
 max_batches = 0  # all if 0
 lossfunction = nn.MSELoss()
@@ -61,7 +61,7 @@ loader = OpenEDSLoader(root, batch_size=batch_size, shuffle=True, max_videos=Non
 train_loader, test_loader, _ = loader.get_loaders()
 
 
-model, optimizer = load_auto_encoder(arc_filename_enc, arc_filename_dec, 216, 216, lr, torch.optim.Adam)
+model, optimizer = load_auto_encoder(arc_filename_enc, arc_filename_dec, 324, 324, lr, torch.optim.Adam)
 
 '''
 optimizer = LARS(
@@ -115,6 +115,7 @@ if __name__ == '__main__':
     start_time = datetime.now().replace(microsecond=0)
 
     checkpoint_util = CheckpointUtil(checkpoint_dir)
+    test_loss_buffer = []
 
     print("Starting training at {}...".format(start_time))
     best_loss_test = 1000000
@@ -154,6 +155,10 @@ if __name__ == '__main__':
                 time0 = datetime.now()
 
         loss = test(test_loader, model)
+
+        test_loss_buffer.append(loss)
+
+
         if loss < best_loss_test:
             best_loss_test = loss
 
@@ -162,6 +167,12 @@ if __name__ == '__main__':
 
         if epoch % log_interval == 0 and epoch > 0 or epoch == n_epochs - 1:
             checkpoint_util.save_checkpoint(model, optimizer, epoch, train_loss, loss, best_loss, False)
+
+        if len(test_loss_buffer) >= 4:
+            if test_loss_buffer[-1] > test_loss_buffer[-2] > test_loss_buffer[-3] > test_loss_buffer[-4]:
+                print("Test loss has not improved for 4 epochs. Stopping training.")
+                break
+            test_loss_buffer.pop(0)
 
     pytorch_total_params = sum(p.numel() for p in model.parameters())
     print('Number of params: {}'.format(pytorch_total_params))
