@@ -28,6 +28,8 @@ class CheckpointUtil:
         if is_best:
             shutil.copyfile(filename, self.checkpoint_dir + '/model_best_{}.pt.tar'.format(epoch))
 
+        return filename
+
     def load_checkpoint(self, model, optimizer, check_point_name, reset_optimizer=False):
         filename = self.checkpoint_dir + '/' + check_point_name
         if os.path.isfile(filename):

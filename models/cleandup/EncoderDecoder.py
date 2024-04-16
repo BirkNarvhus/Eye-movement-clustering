@@ -146,8 +146,8 @@ def test():
     layers_enc = lay_fac.generate_layer_array()
     print(layers_enc)
 
-    model = EncoderDecoder(layers_enc, layers_dec, 216, 216)
-    print(summary(model, input_size=(8, 1, 60, 256, 256), depth=10))
+    model = EncoderDecoder(layers_enc, layers_dec, 326, 326)
+    print(summary(model, input_size=(8, 1, 60, 256, 256)))
 
 
 if __name__ == "__main__":

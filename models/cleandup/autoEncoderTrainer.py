@@ -28,11 +28,11 @@ relative_path = ""
 root = relative_path + 'data/openEDS/openEDS'
 save_path = relative_path + 'data/openEDS/openEDS.npy'
 
-
+training_runs = 2
 batch_size = 8
 log_interval = 1
-lr = 0.0002
-n_epochs = 40
+lr = 0.0001
+n_epochs = 30
 steps = 0
 max_batches = 0  # all if 0
 lossfunction = nn.MSELoss()
@@ -61,7 +61,9 @@ loader = OpenEDSLoader(root, batch_size=batch_size, shuffle=True, max_videos=Non
 train_loader, test_loader, _ = loader.get_loaders()
 
 
-model, optimizer = load_auto_encoder(arc_filename_enc, arc_filename_dec, 324, 324, lr, torch.optim.Adam)
+model, optimizer = load_auto_encoder(arc_filename_enc, arc_filename_dec, 326,
+                                     326, lr, torch.optim.Adam, False,
+                                     2, 1e-6)
 
 '''
 optimizer = LARS(
@@ -98,8 +100,8 @@ def test(test_loader, model):
         return test_loss
 
 
-if __name__ == '__main__':
-
+def main():
+    global model, optimizer, steps, n_epochs, checkpoint_dir, lossfunction, batch_size, log_interval, device
     if len(sys.argv) > 2:
         load_file_path = sys.argv[1]
         load_file_dir_path = os.path.dirname(load_file_path)
@@ -117,14 +119,12 @@ if __name__ == '__main__':
 
     checkpoint_util = CheckpointUtil(checkpoint_dir)
     test_loss_buffer = []
-
     print("Starting training at {}...".format(start_time))
-    best_loss_test = 1000000
     best_loss = 1000000
     for epoch in range(n_epochs):
         print("")
 
-        print("Epoch: ", epoch, "/", n_epochs - 1, " at ", datetime.now().replace(microsecond=0), "...")
+        print("Epoch: ", epoch +1, "/", n_epochs, " at ", datetime.now().replace(microsecond=0), "...")
         print("")
         train_loss = 0
         model.train()
@@ -141,19 +141,20 @@ if __name__ == '__main__':
             # Validation
             train_loss = loss
             steps += batch_size
-            if idx > 0:
 
-                current_time = datetime.now().replace(microsecond=0) - start_time
-                delta_time = datetime.now() - time0
+            time_now = datetime.now()
+            delta_time = time_now - time0
+            time0 = time_now
+            if idx > 0:
+                current_time = time_now.replace(microsecond=0) - start_time
                 predicted_finish = delta_time * (len(train_loader)) * (n_epochs - epoch - 1) + current_time
                 time_left = predicted_finish - current_time
 
                 print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\tSteps: {}\t{}s/it\tRunning Time: {} - {}\tTime left: {}'.format(
-                    epoch, idx * batch_size, len(train_loader) * batch_size,
+                    epoch + 1, idx * batch_size, len(train_loader) * batch_size,
                            100. * idx / len(train_loader), train_loss.item(), batch_size,
                            str(delta_time), str(current_time), str(predicted_finish), str(time_left)))
 
-                time0 = datetime.now()
 
         loss = test(test_loader, model)
 
@@ -174,3 +175,24 @@ if __name__ == '__main__':
     pytorch_total_params = sum(p.numel() for p in model.parameters())
     print('Number of params: {}'.format(pytorch_total_params))
     print("Training finished. at {}".format(datetime.now().replace(microsecond=0)))
+
+
+if __name__ == '__main__':
+    prev_checkpoint_run = None
+    for i in range(training_runs):
+        if i > 0:
+            index = checkpoint_dir.rfind("_")
+            checkpoint_dir = checkpoint_dir[:index] + "_" + str(i)
+        else:
+            checkpoint_dir = checkpoint_dir + "_" + str(i)
+        print("Starting training run ", i + 1)
+        print("Checkpoint dir: ", checkpoint_dir)
+        main()
+        if i != training_runs - 1:
+            print("Resting optimizer for next run.")
+            optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=1e-6)
+
+
+
+
+
