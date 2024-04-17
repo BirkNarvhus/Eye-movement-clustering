@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 import sys
 
-sys.path.append('/')
+sys.path.append('C:\\Users\\vizlab_stud\\Documents\\pythonProjects\\eye-movement-classification')
 
 from models.cleandup.EncoderDecoder import EncoderDecoder
 from util.testingUtils.checkpointsLogging import CheckpointUtil
@@ -34,7 +34,7 @@ def load_model(model_file):
     layerfac.read_from_file(arc_filename_dec, full_block_res=True, res_interval=2)
     layers_dec = layerfac.generate_layer_array()
 
-    model = EncoderDecoder(layers_enc, layers_dec, 216, 216)
+    model = EncoderDecoder(layers_enc, layers_dec, 326, 326)
 
     optimizer = torch.optim.Adam(
         [params for params in model.parameters() if params.requires_grad],
