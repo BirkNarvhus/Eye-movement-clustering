@@ -8,10 +8,12 @@ import warnings
 
 import sys
 
-from models.cleandup.EncoderDecoder import SmoothenGradiantWithHubertLoss
+
 
 sys.path.append('C:\\Users\\vizlab_stud\\Documents\\pythonProjects\\eye-movement-classification')
 
+from models.cleandup.EncoderDecoder import SmoothenGradiantWithHubertLoss, EncoderDecoder
+from util.layerFactory import LayerFactory
 from util.testingUtils.checkpointsLogging import CheckpointUtil
 from util.dataset_loader import OpenEDSLoader
 from util.load_auto_enc_util import load_auto_encoder
@@ -27,16 +29,16 @@ relative_path = ""
 
 
 root = relative_path + 'data/openEDS/openEDS'
-save_path = relative_path + 'data/openEDS/openEDS.npy'
+save_path = relative_path + 'data/openEDS/openEDSSplit.npy'
 
 training_runs = 2
-batch_size = 8
+batch_size = 32
 log_interval = 1
 lr = 0.0001
 n_epochs = 30
 steps = 0
 max_batches = 0  # all if 0
-lossfunction = SmoothenGradiantWithHubertLoss(nn.MSELoss(), 0.01)
+lossfunction = nn.MSELoss()
 
 arc_filename_enc = relative_path + "content/Arc/model_3_legacy.csv"
 arc_filename_dec = relative_path + "content/Arc/model_3_reverse_legacy.csv"
@@ -48,7 +50,6 @@ output_dir = relative_path + 'content/saved_outputs/autoEnc/'
 
 
 transformations = [
-    TempStride(2),
     Crop_top(20),  # centers the image better
     Crop((256, 256)),
     Normalize(76.3, 41.7)
@@ -57,15 +58,32 @@ transformations = [
 
 loader = OpenEDSLoader(root, batch_size=batch_size, shuffle=True, max_videos=None, save_path=save_path,
                        save_anyway=False,
-                       transformations=transformations, sim_clr=False)
+                       transformations=transformations, sim_clr=False, split_frames=6)
 
 train_loader, test_loader, _ = loader.get_loaders()
 
-
-model, optimizer = load_auto_encoder(arc_filename_enc, arc_filename_dec, 216,
+'''
+    model, optimizer = load_auto_encoder(arc_filename_enc, arc_filename_dec, 216,
                                      216, lr, torch.optim.Adam, False,
                                      2, 1e-6)
+'''
 
+lay_fac = LayerFactory()
+lay_fac.read_from_file("content/Arc/" + "model_3_v3_reverse.csv", full_block_res=True, res_interval=2)
+layers_dec = lay_fac.generate_layer_array()
+
+lay_fac.read_from_file("content/Arc/"  + "model_3_v2.csv", full_block_res=True, res_interval=2)
+layers_enc = lay_fac.generate_layer_array()
+
+model = EncoderDecoder(layers_enc, layers_dec, 216, 216,
+                       dil_factors=(1, 2, 2), lin_bottleneck=True, lin_bottleneck_layers=3,
+                       lin_bottleneck_channels=(216*8*8, 1000, 32*8*8), stream_buffer=False)
+
+optimizer = torch.optim.Adam(
+    [params for params in model.parameters() if params.requires_grad],
+    lr=lr,
+    weight_decay=1e-6,
+)
 '''
 optimizer = LARS(
         [params for params in model.parameters() if params.requires_grad],

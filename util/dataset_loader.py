@@ -63,7 +63,7 @@ class Loader:
 
 class OpenEDSLoader:
     def __init__(self, root, batch_size=32, shuffle=True, max_videos=None, save_path=None, save_anyway=False,
-                 transformations=None, sim_clr=False):
+                 transformations=None, sim_clr=False, split_frames=None):
         self.root = root
         self.videos = (os.listdir(root))[2:]
         self.max_videos = max_videos
@@ -71,7 +71,7 @@ class OpenEDSLoader:
         self.save_anyway = save_anyway
         self.batch_size = batch_size
         self.currBatch = 0
-
+        self.split_frames = split_frames
         self.data = self.load_data() if root is not None else None
         if shuffle:
             self.shuffle()
@@ -109,16 +109,25 @@ class OpenEDSLoader:
                 frame_data = Image.open(frame_path)
                 video_data.append(np.array(frame_data))
 
-            if len(video_data) > 120:
-                video_data = video_data[:120]
+            if self.split_frames is None:
+                if len(video_data) > 120:
+                    video_data = video_data[:120]
+                else:
+                    while len(video_data) < 120:
+                        video_data.append(np.zeros_like(video_data[0]))
+
+                data.append(np.array(video_data))
+                if self.max_videos is not None and len(data) >= self.max_videos:
+                    break
             else:
-                while len(video_data) < 120:
-                    video_data.append(np.zeros_like(video_data[0]))
-
-            data.append(np.array(video_data))
-            if self.max_videos is not None and len(data) >= self.max_videos:
-                break
-
+                for i in range(0, len(video_data), self.split_frames):
+                    split_data = video_data[i:i + self.split_frames]
+                    if len(split_data) < self.split_frames:
+                        while len(split_data) < self.split_frames:
+                            split_data.append(np.zeros_like(split_data[0]))
+                    data.append(np.array(split_data))
+                    if self.max_videos is not None and len(data) >= self.max_videos:
+                        break
         data = np.array(data)
         if self.save_path is not None or self.save_anyway:
             print("Saving openEDS dataset to ", self.save_path)
@@ -146,7 +155,7 @@ class OpenEDSLoader:
 
 def test():
     root = '../data/openEDS/openEDS'
-    save_path = '../data/openEDS/openEDS.npy'
+    save_path = '../data/openEDS/openEDSSplit.npy'
 
     transformations = [
         Crop_top(20),  # centers the image better
@@ -156,15 +165,16 @@ def test():
         Noise(0.6),
     ]
 
-    loader = OpenEDSLoader(root, batch_size=32, shuffle=True, max_videos=None, save_path=save_path, save_anyway=False,
-                           transformations=transformations, sim_clr=True)
+    loader = OpenEDSLoader(root, batch_size=8, shuffle=True, max_videos=None, save_path=save_path, save_anyway=True,
+                           transformations=transformations, sim_clr=True, split_frames=6)
 
     train, _, _ = loader.get_loaders()
     batch = next(iter(train))
+    print(len(train))
 
     x_batch, y_batch = batch
     print(x_batch.shape, y_batch.shape)
-
+    '''
     fig, ax = plt.subplots(2, 10)
     for x in range(10):
         ax[0, x].imshow(x_batch[0][0][10 + x].squeeze(), cmap='gray')
@@ -176,6 +186,8 @@ def test():
     data = np.load(save_path)
 
     print("mean:" + str(np.mean(data)) + "   STD:" + str(np.std(data)))
+    
+    '''
 
 if __name__ == '__main__':
     test()
