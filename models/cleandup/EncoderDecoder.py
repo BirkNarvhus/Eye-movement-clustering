@@ -43,6 +43,7 @@ class DilationBottleneck(nn.Module):
             else:
                 sum_output = torch.add(sum_output, x)
             x = layer(x)
+
         return torch.add(sum_output, x)
 
 
@@ -79,10 +80,11 @@ class Decoder(nn.Module):
                 layer_type = "up"
             if layer_type == "up":
                 self.convLayers.append(UpsampleLayer([[y[0] for y in x] for x in layer],
-                                                     kernels_size=[[y[1] for y in x] for x in layer], causel=False))
+                                                     kernels_size=[[y[1] for y in x] for x in layer], causel=False,
+                                                     upscale_kernel=(1, 2, 2) if i != 0 else (3, 2, 2)))
             if layer_type == "temp_up":
                 temp_modlist = nn.ModuleList()
-                temp_modlist.append(nn.Upsample(scale_factor=(2, 1, 1), mode='trilinear'))
+                temp_modlist.append(nn.Upsample(scale_factor=(2, 1, 1)))
                 temp_modlist.append(MultiResLayer([[y[0] for y in x] for x in layer],
                                                      kernels_size=[[y[1] for y in x] for x in layer], causel=False))
                 temp_modlist = nn.Sequential(*temp_modlist)
@@ -91,10 +93,10 @@ class Decoder(nn.Module):
                 self.convLayers.append(MultiResLayer([[y[0] for y in x] for x in layer],
                                                      kernels_size=[[y[1] for y in x] for x in layer], causel=False))
 
-        self.net = nn.Sequential(*self.convLayers, nn.Conv3d(1, 1, (5, 1, 1),
-                                                             stride=(1, 1, 1), padding=0))
+        self.net = nn.Sequential(*self.convLayers)
 
     def forward(self, x):
+
         return self.net(x)
 
 
@@ -119,10 +121,10 @@ class Resize(nn.Module):
 class EncoderDecoder(nn.Module):
     def __init__(self, encoder_layers, decoder_layers, bottleneck_input_channels, bottleneck_output_channels,
                  remove_decoder=False, legacy=False, lin_bottleneck=False, lin_bottleneck_layers=1,
-                 lin_bottleneck_channels=(216*8*8, 216*8*8, 216*8*8), dil_factors=(1, 2, 4, 8)):
+                 lin_bottleneck_channels=(216*8*8, 216*8*8, 216*8*8), dil_factors=(1, 2, 4, 8), stream_buffer=True):
         super(EncoderDecoder, self).__init__()
         self.init_down_size = nn.Conv3d(1, 16, (1, 1, 1), stride=(1, 2, 2), padding=0)
-        self.encoder = Encoder(encoder_layers)
+        self.encoder = Encoder(encoder_layers, stream_buffer=stream_buffer)
         self.bottleneck = DilationBottleneck(in_channels=bottleneck_input_channels,
                                              out_channels=bottleneck_output_channels, dil_factors=dil_factors)
         self.cgp = Cumulativ_global_pooling()
@@ -191,20 +193,20 @@ def test():
 
     relative_path = "../../content/Arc/"
     lay_fac = LayerFactory()
-    lay_fac.read_from_file(relative_path + "model_3_reverse.csv", full_block_res=True, res_interval=2)
+    lay_fac.read_from_file(relative_path + "model_3_v3_reverse.csv", full_block_res=True, res_interval=2)
     layers_dec = lay_fac.generate_layer_array()
 
-    lay_fac.read_from_file(relative_path + "model_3.csv", full_block_res=True, res_interval=2)
+    lay_fac.read_from_file(relative_path + "model_3_v2.csv", full_block_res=True, res_interval=2)
     layers_enc = lay_fac.generate_layer_array()
     print(layers_enc)
 
-    model = EncoderDecoder(layers_enc, layers_dec, 326, 326,
-                           dil_factors=(1, 2, 4), lin_bottleneck=False, lin_bottleneck_layers=3,
-                           lin_bottleneck_channels=(216*8*8, 1000, 32*8*8))
+    model = EncoderDecoder(layers_enc, layers_dec, 216, 216,
+                           dil_factors=(1, 2, 2), lin_bottleneck=True, lin_bottleneck_layers=3,
+                           lin_bottleneck_channels=(216*8*8, 1000, 32*8*8), stream_buffer=False)
 
-    #x = model(torch.randn(8, 1, 60, 256, 256))
+    #x = model(torch.randn(8, 1, 6, 256, 256))
     #print(x.shape)
-    print(summary(model, input_size=(8, 1, 60, 256, 256), depth=3))
+    print(summary(model, input_size=(8, 1, 6, 256, 256), depth=3))
 
 
 if __name__ == "__main__":

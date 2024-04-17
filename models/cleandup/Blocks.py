@@ -138,7 +138,7 @@ class UpsampleLayer(nn.Module):
     def __init__(self, channels, kernels_size=((3, 3, 3), (3, 3, 3), (3, 3, 3)), stride=1, padding=1,
                  upscale_kernel=(2, 2, 2), causel=False):
         super(UpsampleLayer, self).__init__()
-        self.upsample = nn.Upsample(scale_factor=upscale_kernel, mode='trilinear')
+        self.upsample = nn.Upsample(scale_factor=upscale_kernel)
         self.resBlockLayers = MultiResLayer(channels, kernels_size, stride, padding, causel=causel)
 
         self.net = nn.Sequential(self.upsample, self.resBlockLayers)

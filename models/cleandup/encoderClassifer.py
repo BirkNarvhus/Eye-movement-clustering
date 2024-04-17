@@ -10,11 +10,11 @@ from util.modelUtils import get_n_params
 
 
 class Encoder(nn.Module):
-    def __init__(self, layers):
+    def __init__(self, layers, stream_buffer=True):
         super(Encoder, self).__init__()
 
         self.convLayers = nn.ModuleList()
-
+        self.stream_buffer = stream_buffer
         for i, layer in enumerate(layers):
             layer_type = layer.pop(0)
             if i != 0:
@@ -31,6 +31,8 @@ class Encoder(nn.Module):
 
         self.net = nn.Sequential(*self.convLayers)
     def forward(self, x):
+        if not self.stream_buffer:
+            return self.net(x)
         buffer = list(x.split(10, 2))
         stream_buffer = [[] for x in range(len(self.convLayers))]
         output_buffer = None
