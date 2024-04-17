@@ -21,6 +21,7 @@ class SmoothenGradiantWithHubertLoss(nn.Module):
         loss = torch.mean(loss + self.beta * diff)
         return loss
 
+
 class DilationBottleneck(nn.Module):
     def __init__(self, dil_factors=(1, 2, 4, 8), kernel=(3, 3, 3), in_channels=1, out_channels=1):
         super(DilationBottleneck, self).__init__()
@@ -43,6 +44,22 @@ class DilationBottleneck(nn.Module):
                 sum_output = torch.add(sum_output, x)
             x = layer(x)
         return torch.add(sum_output, x)
+
+
+class Linenar_bottleneck(nn.Module):
+    def __init__(self, in_channels, hidden_channels, out_channels, layers=1):
+        super(Linenar_bottleneck, self).__init__()
+        modlist = nn.ModuleList()
+        if layers != 1:
+            for i in range(layers - 1):
+                modlist.append(nn.Linear(in_channels, hidden_channels))
+                modlist.append(nn.LeakyReLU())
+                in_channels = hidden_channels
+        modlist.append(nn.Linear(in_channels, out_channels))
+        self.net = nn.Sequential(*modlist)
+
+    def forward(self, x):
+        return self.net(x)
 
 
 class Decoder(nn.Module):
@@ -90,29 +107,51 @@ class Unsqeeze(nn.Module):
         return torch.unsqueeze(x, self.dim)
 
 
+class Resize(nn.Module):
+    def __init__(self, size):
+        super(Resize, self).__init__()
+        self.size = size
+
+    def forward(self, x):
+        return torch.reshape(x, self.size)
+
+
 class EncoderDecoder(nn.Module):
     def __init__(self, encoder_layers, decoder_layers, bottleneck_input_channels, bottleneck_output_channels,
-                 remove_decoder=False, legacy=False):
+                 remove_decoder=False, legacy=False, lin_bottleneck=False, lin_bottleneck_layers=1,
+                 lin_bottleneck_channels=(216*8*8, 216*8*8, 216*8*8), dil_factors=(1, 2, 4, 8)):
         super(EncoderDecoder, self).__init__()
         self.init_down_size = nn.Conv3d(1, 16, (1, 1, 1), stride=(1, 2, 2), padding=0)
         self.encoder = Encoder(encoder_layers)
         self.bottleneck = DilationBottleneck(in_channels=bottleneck_input_channels,
-                                             out_channels=bottleneck_output_channels)
+                                             out_channels=bottleneck_output_channels, dil_factors=dil_factors)
         self.cgp = Cumulativ_global_pooling()
         self.decoder = Decoder(decoder_layers)
         self.unsq = Unsqeeze(2)
         self.remove_decoder = remove_decoder
         self.legacy = legacy
 
-        if legacy:
-            self.net = nn.Sequential(self.init_down_size, self.encoder, self.bottleneck, self.cgp, self.unsq,
-                                     self.decoder)
-        else:
-            self.encoder = nn.Sequential(self.init_down_size, self.encoder, self.bottleneck, self.cgp)
+        self.flatten = nn.Flatten() if lin_bottleneck else None
+        self.linear_bottleneck = Linenar_bottleneck(*lin_bottleneck_channels, lin_bottleneck_layers) \
+            if lin_bottleneck else None
+        self.reshape = Resize((-1, lin_bottleneck_channels[2] // (8*8), 8, 8)) if lin_bottleneck else None
 
-            self.decoder = nn.Sequential(self.unsq, self.decoder)
+        lin_bottleneck_modlist = nn.ModuleList([self.flatten, self.linear_bottleneck, self.reshape])
+        if not lin_bottleneck:
+            modlist = nn.ModuleList([self.init_down_size, self.encoder, self.bottleneck, self.cgp, self.unsq,
+                                     self.decoder])
+        else:
+            modlist = nn.ModuleList([self.init_down_size, self.encoder, self.bottleneck, self.cgp,
+                                     *lin_bottleneck_modlist, self.unsq, self.decoder])
+        if legacy:
+            self.net = nn.Sequential(*modlist)
+        else:
+            self.encoder = nn.Sequential(*modlist[:-2])
+
+            self.decoder = nn.Sequential(*modlist[-2:])
 
     def forward(self, x):
+
         if self.legacy:
             if self.remove_decoder:
                 for layer in self.net[:-2]:
@@ -159,8 +198,13 @@ def test():
     layers_enc = lay_fac.generate_layer_array()
     print(layers_enc)
 
-    model = EncoderDecoder(layers_enc, layers_dec, 326, 326)
-    print(summary(model, input_size=(8, 1, 60, 256, 256)))
+    model = EncoderDecoder(layers_enc, layers_dec, 326, 326,
+                           dil_factors=(1, 2, 4), lin_bottleneck=False, lin_bottleneck_layers=3,
+                           lin_bottleneck_channels=(216*8*8, 1000, 32*8*8))
+
+    #x = model(torch.randn(8, 1, 60, 256, 256))
+    #print(x.shape)
+    print(summary(model, input_size=(8, 1, 60, 256, 256), depth=3))
 
 
 if __name__ == "__main__":
