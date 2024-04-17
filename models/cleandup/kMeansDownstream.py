@@ -17,7 +17,7 @@ class KMeansDownstream:
         self.kmeans = KMeans(n_clusters=num_clusters, random_state=0)
 
     def fit(self, data):
-        self.kmeans.fit(data)
+        self.kmeans = self.kmeans.fit(data)
 
     def predict(self, data):
         return self.kmeans.predict(data)

@@ -2,29 +2,35 @@ import torch
 import numpy as np
 import cv2
 import sys
+from torch import nn
+from tqdm import tqdm
 
 sys.path.append('C:\\Users\\vizlab_stud\\Documents\\pythonProjects\\eye-movement-classification')
 
+from models.cleandup.kMeansDownstream import KMeansDownstream
+from util.plot_tsne import PlotUtil
 from models.cleandup.EncoderDecoder import EncoderDecoder
 from util.testingUtils.checkpointsLogging import CheckpointUtil
 from util.dataset_loader import OpenEDSLoader
 from util.layerFactory import LayerFactory
 from util.transformations import Crop_top, TempStride, Crop, Normalize
 
-relative_path = "" #"../"
+relative_path = ""  # "../"
 
 batch_size = 8
 save_path = relative_path + 'data/openEDS/openEDS.npy'
 root = relative_path + 'data/openEDS/openEDS'
+Out_folder = 'content/saved_outputs/'
 
+device = "cpu" if not torch.cuda.is_available() else "cuda:0"
 
-def load_model(model_file):
+def load_model(model_file, legacy=False, remove_decoder=False):
     model_dir = model_file[:model_file.rfind('/')]
     model_file_name = model_file[model_file.rfind('/') + 1:]
 
     check_loader = CheckpointUtil(model_dir)
-    arc_filename_enc = relative_path + "content/Arc/model_3.csv"
-    arc_filename_dec = relative_path + "content/Arc/model_3_reverse.csv"
+    arc_filename_enc = relative_path + "content/Arc/model_3_legacy.csv"
+    arc_filename_dec = relative_path + "content/Arc/model_3_reverse_legacy.csv"
 
     layerfac = LayerFactory()
 
@@ -34,11 +40,12 @@ def load_model(model_file):
     layerfac.read_from_file(arc_filename_dec, full_block_res=True, res_interval=2)
     layers_dec = layerfac.generate_layer_array()
 
-    model = EncoderDecoder(layers_enc, layers_dec, 326, 326)
+    model = EncoderDecoder(layers_enc, layers_dec, 216, 216, legacy=legacy,
+                           remove_decoder=remove_decoder)
 
     optimizer = torch.optim.Adam(
         [params for params in model.parameters() if params.requires_grad],
-        lr=0.0001,
+        lr=0.0002,
         weight_decay=1e-6,
     )
     return check_loader.load_checkpoint(model=model, optimizer=optimizer, check_point_name=model_file_name)
@@ -70,13 +77,50 @@ def plot_test(model, data_loader):
         # plot the batch
 
 
+def do_kmeans(model, data_loader):
+    model.to(device)
+
+    flatten = nn.Flatten()
+    model.eval()
+    with (torch.no_grad()):
+        print("Encoding with model")
+        output_buffer = torch.tensor([])
+        for batch in tqdm(data_loader):
+            batch = batch.to(device)
+            encoder_output = model(batch)
+            if output_buffer.shape[0] == 0:
+                output_buffer = flatten(encoder_output).cpu().detach()
+            else:
+                output_buffer = torch.cat([output_buffer, flatten(encoder_output).cpu().detach()], 0)
+
+        print("Encoded data shape: ", output_buffer.shape)
+        print("Running KMeans on the encoded data...")
+
+        # do kmeans on the output_buffer
+        kmds = KMeansDownstream(4)
+        kmds.fit(output_buffer)
+        print("KMeans Done, plotting...")
+        print(output_buffer.shape)
+
+        PlotUtil(output_buffer, "KMeans Downstream Auto enc", mode="TSNE", root=Out_folder, show=True, dims=3
+                 ).plot_tsne_centers(kmds.get_cluster_centers())
+        kmds.save(Out_folder + 'kmeans_output.npy')
+
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python test_model.py <model_file>")
+        print("Usage: python test_model.py <model_file> <optional: mode>")
         sys.exit(1)
+    mode = "autoencoder"
+    if len(sys.argv) > 2:
+        mode = sys.argv[2].lower()
+        if mode == "kmeans":
+            print("Running kmeans")
+        else:
+            print("Could Not find mode: ", mode)
+            sys.exit(1)
 
-    model, _, epoch, best_loss, loss = load_model(sys.argv[1])
+    model, _, epoch, best_loss, loss = load_model(sys.argv[1], legacy=True, remove_decoder=(mode == "kmeans"))
     print("Loaded model from file: ", sys.argv[1])
     print("model stats: epoch: ", epoch, " best_loss: ", best_loss, " loss: ", loss)
     transformations = [
@@ -91,8 +135,10 @@ def main():
                            transformations=transformations, sim_clr=False)
 
     train_loader, test_loader, _ = loader.get_loaders()
-
-    plot_test(model, train_loader)
+    if mode == "kmeans":
+        do_kmeans(model, train_loader)
+    else:
+        plot_test(model, train_loader)
 
 
 if __name__ == '__main__':

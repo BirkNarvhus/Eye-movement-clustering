@@ -92,7 +92,7 @@ class Unsqeeze(nn.Module):
 
 class EncoderDecoder(nn.Module):
     def __init__(self, encoder_layers, decoder_layers, bottleneck_input_channels, bottleneck_output_channels,
-                 remove_decoder=False):
+                 remove_decoder=False, legacy=False):
         super(EncoderDecoder, self).__init__()
         self.init_down_size = nn.Conv3d(1, 16, (1, 1, 1), stride=(1, 2, 2), padding=0)
         self.encoder = Encoder(encoder_layers)
@@ -102,11 +102,24 @@ class EncoderDecoder(nn.Module):
         self.decoder = Decoder(decoder_layers)
         self.unsq = Unsqeeze(2)
         self.remove_decoder = remove_decoder
-        self.encoder = nn.Sequential(self.init_down_size, self.encoder, self.bottleneck, self.cgp)
+        self.legacy = legacy
 
-        self.decoder = nn.Sequential(self.unsq, self.decoder)
+        if legacy:
+            self.net = nn.Sequential(self.init_down_size, self.encoder, self.bottleneck, self.cgp, self.unsq,
+                                     self.decoder)
+        else:
+            self.encoder = nn.Sequential(self.init_down_size, self.encoder, self.bottleneck, self.cgp)
+
+            self.decoder = nn.Sequential(self.unsq, self.decoder)
 
     def forward(self, x):
+        if self.legacy:
+            if self.remove_decoder:
+                for layer in self.net[:-2]:
+                    x = layer(x)
+                return x
+            return self.net(x)
+
         x = self.encoder(x)
         if self.remove_decoder:
             return x
