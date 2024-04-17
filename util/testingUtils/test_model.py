@@ -1,3 +1,5 @@
+import os
+
 import torch
 import numpy as np
 import cv2
@@ -51,12 +53,12 @@ def load_model(model_file, legacy=False, remove_decoder=False):
     return check_loader.load_checkpoint(model=model, optimizer=optimizer, check_point_name=model_file_name)
 
 
-def plot_test(model, data_loader):
+def plot_test(model, data_loader, save=False):
     model.eval()
     with torch.no_grad():
         batch = data_loader.__iter__().__next__()
         auto_encoded_output = model(batch)
-
+        framebuffer = []
         fps = 30
         slowdown_factor = 40
 
@@ -71,10 +73,15 @@ def plot_test(model, data_loader):
                 frame_b = np.reshape(frame_b, (256, 256))
                 frame = np.concatenate((frame_a, frame_b), axis=1)
                 cv2.imshow('Grayscale', frame)
+                if save:
+                    framebuffer.append(frame)
                 # Press Q on keyboard to  exit
                 if cv2.waitKey((60 // fps) * slowdown_factor) & 0xFF == ord('q'):
                     break
-        # plot the batch
+        if save:
+            print("Saving video to: ", Out_folder + '/autoEncVideo/' + "frames" + '.npy')
+            os.makedirs(Out_folder + '/autoEncVideo', exist_ok=True)
+            np.save(Out_folder + '/autoEncVideo/' + "frames" + '.npy', framebuffer)
 
 
 def do_kmeans(model, data_loader):
@@ -116,6 +123,8 @@ def main():
         mode = sys.argv[2].lower()
         if mode == "kmeans":
             print("Running kmeans")
+        elif mode == "save":
+            print("Running and saving autoencoder output to: ", Out_folder)
         else:
             print("Could Not find mode: ", mode)
             sys.exit(1)
@@ -138,7 +147,7 @@ def main():
     if mode == "kmeans":
         do_kmeans(model, train_loader)
     else:
-        plot_test(model, train_loader)
+        plot_test(model, train_loader, save=(mode == "save"))
 
 
 if __name__ == '__main__':

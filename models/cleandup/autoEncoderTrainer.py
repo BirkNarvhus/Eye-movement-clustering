@@ -8,6 +8,7 @@ import warnings
 
 import sys
 
+from models.cleandup.EncoderDecoder import SmoothenGradiantWithHubertLoss
 
 sys.path.append('C:\\Users\\vizlab_stud\\Documents\\pythonProjects\\eye-movement-classification')
 
@@ -35,12 +36,12 @@ lr = 0.0001
 n_epochs = 30
 steps = 0
 max_batches = 0  # all if 0
-lossfunction = nn.MSELoss()
+lossfunction = SmoothenGradiantWithHubertLoss(nn.MSELoss(), 0.01)
 
-arc_filename_enc = relative_path + "content/Arc/model_3.csv"
-arc_filename_dec = relative_path + "content/Arc/model_3_reverse.csv"
+arc_filename_enc = relative_path + "content/Arc/model_3_legacy.csv"
+arc_filename_dec = relative_path + "content/Arc/model_3_reverse_legacy.csv"
 
-model_name = arc_filename_enc.split('/')[2].split('.')[0] + "_auto_encoder_mse_v2"
+model_name = arc_filename_enc.split('/')[2].split('.')[0] + "_auto_encoder_mse_v3"
 
 checkpoint_dir = relative_path + 'content/saved_models/autoEncMSEloss/' + model_name
 output_dir = relative_path + 'content/saved_outputs/autoEnc/'
@@ -61,8 +62,8 @@ loader = OpenEDSLoader(root, batch_size=batch_size, shuffle=True, max_videos=Non
 train_loader, test_loader, _ = loader.get_loaders()
 
 
-model, optimizer = load_auto_encoder(arc_filename_enc, arc_filename_dec, 326,
-                                     326, lr, torch.optim.Adam, False,
+model, optimizer = load_auto_encoder(arc_filename_enc, arc_filename_dec, 216,
+                                     216, lr, torch.optim.Adam, False,
                                      2, 1e-6)
 
 '''

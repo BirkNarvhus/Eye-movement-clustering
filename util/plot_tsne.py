@@ -29,6 +29,7 @@ class PlotUtil:
         else:
             ax.scatter(X_2d[:, 0], X_2d[:, 1], c="red")
         plt.title(self.title)
+        self.title = self.title.replace(" ", "_")
 
         if with_centers:
             for center in centers:
