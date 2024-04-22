@@ -19,7 +19,7 @@ from util.transformations import Crop_top, TempStride, Crop, Normalize
 
 relative_path = ""  # "../"
 
-batch_size = 8
+batch_size = 32
 save_path = relative_path + 'data/openEDS/openEDS.npy'
 root = relative_path + 'data/openEDS/openEDS'
 Out_folder = 'content/saved_outputs/'
@@ -30,24 +30,35 @@ def load_model(model_file, legacy=False, remove_decoder=False):
     model_dir = model_file[:model_file.rfind('/')]
     model_file_name = model_file[model_file.rfind('/') + 1:]
 
+    transformations = [
+        Crop_top(20),  # centers the image better
+        Crop((256, 256)),
+        Normalize(76.3, 41.7)
+    ]
+
     check_loader = CheckpointUtil(model_dir)
-    arc_filename_enc = relative_path + "content/Arc/model_3_legacy.csv"
-    arc_filename_dec = relative_path + "content/Arc/model_3_reverse_legacy.csv"
 
-    layerfac = LayerFactory()
 
-    layerfac.read_from_file(arc_filename_enc, full_block_res=True, res_interval=2)
-    layers_enc = layerfac.generate_layer_array()
+    '''
+        model, optimizer = load_auto_encoder(arc_filename_enc, arc_filename_dec, 216,
+                                         216, lr, torch.optim.Adam, False,
+                                         2, 1e-6)
+    '''
 
-    layerfac.read_from_file(arc_filename_dec, full_block_res=True, res_interval=2)
-    layers_dec = layerfac.generate_layer_array()
+    lay_fac = LayerFactory()
+    lay_fac.read_from_file("content/Arc/" + "model_3_v3_reverse.csv", full_block_res=True, res_interval=2)
+    layers_dec = lay_fac.generate_layer_array()
 
-    model = EncoderDecoder(layers_enc, layers_dec, 216, 216, legacy=legacy,
-                           remove_decoder=remove_decoder)
+    lay_fac.read_from_file("content/Arc/" + "model_3_v2.csv", full_block_res=True, res_interval=2)
+    layers_enc = lay_fac.generate_layer_array()
+
+    model = EncoderDecoder(layers_enc, layers_dec, 216, 216,
+                           dil_factors=(1, 2, 2), lin_bottleneck=True, lin_bottleneck_layers=3,
+                           lin_bottleneck_channels=(216 * 8 * 8, 1000, 32 * 8 * 8), stream_buffer=False, remove_decoder=remove_decoder)
 
     optimizer = torch.optim.Adam(
         [params for params in model.parameters() if params.requires_grad],
-        lr=0.0002,
+        lr=0.001,
         weight_decay=1e-6,
     )
     return check_loader.load_checkpoint(model=model, optimizer=optimizer, check_point_name=model_file_name)
@@ -66,7 +77,7 @@ def plot_test(model, data_loader, save=False):
             batch_one = batch[x].numpy().astype(np.float32)
 
             auto_encoded_output_one = auto_encoded_output[x].numpy().astype(np.float32)
-            for i in range(60):
+            for i in range(6):
                 frame_a = batch_one[:, i, :, :]
                 frame_b = auto_encoded_output_one[:, i, :, :]
                 frame_a = np.reshape(frame_a, (256, 256))
@@ -141,7 +152,7 @@ def main():
 
     loader = OpenEDSLoader(root, batch_size=batch_size, shuffle=True, max_videos=None, save_path=save_path,
                            save_anyway=False,
-                           transformations=transformations, sim_clr=False)
+                           transformations=transformations, sim_clr=False, split_frames=6)
 
     train_loader, test_loader, _ = loader.get_loaders()
     if mode == "kmeans":
