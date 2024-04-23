@@ -49,12 +49,12 @@ def load_model(model_file, legacy=False, remove_decoder=False):
     lay_fac.read_from_file("content/Arc/" + "model_3_v3_reverse.csv", full_block_res=True, res_interval=2)
     layers_dec = lay_fac.generate_layer_array()
 
-    lay_fac.read_from_file("content/Arc/" + "model_3_v2.csv", full_block_res=True, res_interval=2)
+    lay_fac.read_from_file("content/Arc/" + "model_4.csv", full_block_res=True, res_interval=2)
     layers_enc = lay_fac.generate_layer_array()
 
-    model = EncoderDecoder(layers_enc, layers_dec, 216, 216,
+    model = EncoderDecoder(layers_enc, layers_dec, 400, 400,
                            dil_factors=(1, 2, 2), lin_bottleneck=True, lin_bottleneck_layers=3,
-                           lin_bottleneck_channels=(216 * 8 * 8, 1000, 32 * 8 * 8), stream_buffer=False, remove_decoder=remove_decoder)
+                           lin_bottleneck_channels=(400 * 8 * 8, 2000, 64 * 8 * 8), stream_buffer=False, remove_decoder=remove_decoder)
 
     optimizer = torch.optim.Adam(
         [params for params in model.parameters() if params.requires_grad],

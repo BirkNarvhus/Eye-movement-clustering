@@ -31,11 +31,11 @@ relative_path = ""
 root = relative_path + 'data/openEDS/openEDS'
 save_path = relative_path + 'data/openEDS/openEDSSplit.npy'
 
-training_runs = 2
+training_runs = 1
 batch_size = 32
-log_interval = 1
+log_interval = 4
 lr = 0.0001
-n_epochs = 30
+n_epochs = 100
 steps = 0
 max_batches = 0  # all if 0
 lossfunction = nn.MSELoss()
@@ -127,9 +127,9 @@ def main():
         load_file_name = os.path.basename(load_file_path)
         print("Loading model checkpoint from: ", load_file_path)
         checkpoint_util = CheckpointUtil(load_file_dir_path)
-        model, optimizer, _, _, _ = checkpoint_util.load_checkpoint(model, optimizer, load_file_name,
+        model, optimizer, start_epoch, _, loss = checkpoint_util.load_checkpoint(model, optimizer, load_file_name,
                                                                     reset_optimizer=True)
-
+        print("Loaded model from epoch: ", start_epoch, " with loss: ", loss)
     model.to(device)
 
     loss_fn = lossfunction
@@ -177,19 +177,13 @@ def main():
 
         loss = test(test_loader, model)
 
-        test_loss_buffer.append(loss)
-
         if train_loss < best_loss:
             best_loss = train_loss
 
         if epoch % log_interval == 0 and epoch > 0 or epoch == n_epochs - 1:
             checkpoint_util.save_checkpoint(model, optimizer, epoch, train_loss, loss, best_loss, False)
 
-        if len(test_loss_buffer) >= 5:
-            if test_loss_buffer[-1] > test_loss_buffer[-2] > test_loss_buffer[-3] > test_loss_buffer[-4]:
-                print("Test loss has not improved for 5 epochs. Stopping training.")
-                break
-            test_loss_buffer.pop(0)
+
 
     pytorch_total_params = sum(p.numel() for p in model.parameters())
     print('Number of params: {}'.format(pytorch_total_params))
