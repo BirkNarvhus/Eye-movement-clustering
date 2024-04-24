@@ -17,8 +17,6 @@ def load_all_checkpoints(checkpoint_dir):
     for file in file_list:
         if file.startswith("model_best"):
             pass
-        test_loss.append(0)
-        train_loss.append(0)
     for file in file_list:
         if file.endswith(".pt.tar"):
             if file.startswith("model_best"):
@@ -29,15 +27,17 @@ def load_all_checkpoints(checkpoint_dir):
                     continue
                 file_index = file[index + 1:file.find(".")]
                 stats = checkpoint_util.load_checkpoint_stats(file)
-                test_loss[int(file_index) - 1] = stats['test_loss']
-                train_loss[int(file_index) - 1] = stats['loss'].cpu().detach().numpy()
+                test_loss.append((file_index, stats['test_loss']))
+                train_loss.append((file_index, stats['loss'].cpu().detach().numpy()))
+    test_loss.sort(key=lambda x: x[0])
+    train_loss.sort(key=lambda x: x[0])
     return train_loss, test_loss
 
 
 def plot_loss(checkpoint_dir):
     train_loss, test_loss = load_all_checkpoints(checkpoint_dir)
-    plt.plot(train_loss, label="train loss")
-    plt.plot(test_loss, label="test loss")
+    plt.plot([x[1] for x in train_loss], label="train loss")
+    plt.plot([x[1] for x in test_loss], label="test loss")
     plt.legend()
     plt.show()
 

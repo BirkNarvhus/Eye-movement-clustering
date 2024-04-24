@@ -16,8 +16,8 @@ from models.cleandup.EncoderDecoder import SmoothenGradiantWithHubertLoss, Encod
 from util.layerFactory import LayerFactory
 from util.testingUtils.checkpointsLogging import CheckpointUtil
 from util.dataset_loader import OpenEDSLoader
-from util.load_auto_enc_util import load_auto_encoder
 from util.transformations import *
+from models.cleandup.customLoss import BceDiceLoss
 
 warnings.simplefilter("ignore", UserWarning)
 
@@ -38,12 +38,12 @@ lr = 0.0001
 n_epochs = 100
 steps = 0
 max_batches = 0  # all if 0
-lossfunction = nn.MSELoss()
+lossfunction = BceDiceLoss()
 
-arc_filename_enc = relative_path + "content/Arc/model_3_legacy.csv"
-arc_filename_dec = relative_path + "content/Arc/model_3_reverse_legacy.csv"
+arc_filename_enc = relative_path + "content/Arc/" + "model_4.csv"
+arc_filename_dec = relative_path + "content/Arc/" + "model_3_v3_reverse.csv"
 
-model_name = arc_filename_enc.split('/')[2].split('.')[0] + "_auto_encoder_mse_v3"
+model_name = arc_filename_enc.split('/')[2].split('.')[0] + "_auto_encoder_mse_v4"
 
 checkpoint_dir = relative_path + 'content/saved_models/autoEncMSEloss/' + model_name
 output_dir = relative_path + 'content/saved_outputs/autoEnc/'
@@ -121,7 +121,7 @@ def test(test_loader, model):
 
 def main():
     global model, optimizer, steps, n_epochs, checkpoint_dir, lossfunction, batch_size, log_interval, device
-    if len(sys.argv) > 2:
+    if len(sys.argv) >= 2:
         load_file_path = sys.argv[1]
         load_file_dir_path = os.path.dirname(load_file_path)
         load_file_name = os.path.basename(load_file_path)
