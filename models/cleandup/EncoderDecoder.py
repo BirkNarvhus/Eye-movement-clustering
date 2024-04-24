@@ -191,17 +191,19 @@ def test():
    
     '''
     reltive_path = "../../"
+    arc_filename_enc = reltive_path + "content/Arc/" + "model_5.csv"
+    arc_filename_dec = reltive_path + "content/Arc/" + "model_5_reverse.csv"
 
     lay_fac = LayerFactory()
-    lay_fac.read_from_file(reltive_path + "content/Arc/" + "model_3_v3_reverse.csv", full_block_res=True, res_interval=2)
+    lay_fac.read_from_file(arc_filename_dec, full_block_res=True, res_interval=2)
     layers_dec = lay_fac.generate_layer_array()
 
-    lay_fac.read_from_file(reltive_path + "content/Arc/" + "model_4.csv", full_block_res=True, res_interval=2)
+    lay_fac.read_from_file(arc_filename_enc, full_block_res=True, res_interval=2)
     layers_enc = lay_fac.generate_layer_array()
 
-    model = EncoderDecoder(layers_enc, layers_dec, 400, 400,
+    model = EncoderDecoder(layers_enc, layers_dec, 200, 200,
                            dil_factors=(1, 2, 2), lin_bottleneck=True, lin_bottleneck_layers=3,
-                           lin_bottleneck_channels=(400*8*8, 2000, 64*8*8), stream_buffer=False)
+                           lin_bottleneck_channels=(200 * 8 * 8, 1000, 120 * 8 * 8), stream_buffer=False)
 
     #x = model(torch.randn(8, 1, 6, 256, 256))
     #print(x.shape)
