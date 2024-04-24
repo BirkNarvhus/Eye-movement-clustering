@@ -40,12 +40,12 @@ steps = 0
 max_batches = 0  # all if 0
 lossfunction = BceDiceLoss()
 
-arc_filename_enc = relative_path + "content/Arc/" + "model_4.csv"
-arc_filename_dec = relative_path + "content/Arc/" + "model_3_v3_reverse.csv"
+arc_filename_enc = relative_path + "content/Arc/" + "model_5.csv"
+arc_filename_dec = relative_path + "content/Arc/" + "model_5_reverse.csv"
 
-model_name = arc_filename_enc.split('/')[2].split('.')[0] + "_auto_encoder_mse_v4"
+model_name = arc_filename_enc.split('/')[2].split('.')[0] + "model_5"
 
-checkpoint_dir = relative_path + 'content/saved_models/autoEncMSEloss/' + model_name
+checkpoint_dir = relative_path + 'content/saved_models/autoEncDiceBCEloss/' + model_name
 output_dir = relative_path + 'content/saved_outputs/autoEnc/'
 
 
@@ -183,10 +183,6 @@ def main():
         if epoch % log_interval == 0 and epoch > 0 or epoch == n_epochs - 1:
             checkpoint_util.save_checkpoint(model, optimizer, epoch, train_loss, loss, best_loss, False)
 
-
-
-    pytorch_total_params = sum(p.numel() for p in model.parameters())
-    print('Number of params: {}'.format(pytorch_total_params))
     print("Training finished. at {}".format(datetime.now().replace(microsecond=0)))
 
 
