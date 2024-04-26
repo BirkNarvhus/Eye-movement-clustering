@@ -17,7 +17,7 @@ from util.layerFactory import LayerFactory
 from util.testingUtils.checkpointsLogging import CheckpointUtil
 from util.dataset_loader import OpenEDSLoader
 from util.transformations import *
-from models.cleandup.customLoss import BceDiceLoss
+from models.cleandup.customLoss import DiceCrossEntrepy
 
 warnings.simplefilter("ignore", UserWarning)
 
@@ -38,14 +38,14 @@ lr = 0.0001
 n_epochs = 100
 steps = 0
 max_batches = 0  # all if 0
-lossfunction = BceDiceLoss()
+lossfunction = DiceCrossEntrepy()
 
 arc_filename_enc = relative_path + "content/Arc/" + "model_5.csv"
 arc_filename_dec = relative_path + "content/Arc/" + "model_5_reverse.csv"
 
-model_name = arc_filename_enc.split('/')[2].split('.')[0] + "model_5"
+model_name = arc_filename_enc.split('/')[2].split('.')[0]
 
-checkpoint_dir = relative_path + 'content/saved_models/autoEncDiceBCEloss/' + model_name
+checkpoint_dir = relative_path + 'content/saved_models/DiceCrossEntrepyAuto_enc/' + model_name
 output_dir = relative_path + 'content/saved_outputs/autoEnc/'
 
 
