@@ -18,3 +18,14 @@ class BceDiceLoss(torch.nn.Module):
     def forward(self, x, y):
         x, y = torch.nn.functional.sigmoid(x), torch.nn.functional.sigmoid(y)
         return self.bce(x, y) + self.dice(x, y)
+
+
+class DiceCrossEntrepy(torch.nn.Module):
+    def __init__(self):
+        super(DiceCrossEntrepy, self).__init__()
+        self.dice = DiceLoss()
+        self.cross_entropy = torch.nn.CrossEntropyLoss()
+
+    def forward(self, x, y):
+        x, y = torch.nn.functional.sigmoid(x), torch.nn.functional.sigmoid(y)
+        return self.dice(x, y) + self.cross_entropy(x, y)
