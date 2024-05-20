@@ -14,6 +14,7 @@ from pathlib import Path
 import torch
 from datetime import datetime
 import warnings
+import yaml
 
 
 import sys
@@ -35,26 +36,48 @@ if torch.cuda.is_available():
 
 relative_path = ""
 
+configs = {}
 
-root = relative_path + 'data/openEDS/openEDS'
-save_path = relative_path + 'data/openEDS/openEDSSplit.npy'
 
-training_runs = 1
-batch_size = 32
-log_interval = 4
-lr = 0.0001
-n_epochs = 100
+def tuple_constructor(loader, node):
+    # Load the sequence of values from the YAML node
+    values = loader.construct_sequence(node)
+    # Return a tuple constructed from the sequence
+    return tuple(values)
+
+
+# Register the constructor with PyYAML
+yaml.SafeLoader.add_constructor('tag:yaml.org,2002:python/tuple',
+                                tuple_constructor)
+
+
+with open("configs/modelConfig.yaml") as stream:
+    try:
+        configs = yaml.load(stream, Loader=yaml.SafeLoader)
+    except yaml.YAMLError as exc:
+        print(exc)
+        exit(1)
+
+
+root = configs['data_params']['root']  # relative_path + 'data/openEDS/openEDS'
+save_path = configs['data_params']['save_path']  # relative_path + 'data/openEDS/openEDSSplit.npy'
+
+training_runs = configs['hyper_params']['training_runs']
+batch_size = configs['hyper_params']['batch_size']
+log_interval = configs['hyper_params']['log_interval']
+lr = configs['hyper_params']['lr']
+n_epochs = configs['hyper_params']['n_epochs']
 steps = 0
-max_batches = 0  # all if 0
+max_batches = configs['hyper_params']['max_batches']  # all if 0
 lossfunction = DiceCrossEntrepy()
 
-arc_filename_enc = relative_path + "content/Arc/" + "model_5.csv"
-arc_filename_dec = relative_path + "content/Arc/" + "model_5_reverse.csv"
+arc_filename_enc = configs['model']['encoder_layers']  # relative_path + "content/Arc/" + "model_5.csv"
+arc_filename_dec = configs['model']['decoder_layers']  # relative_path + "content/Arc/" + "model_5_reverse.csv"
 
 model_name = arc_filename_enc.split('/')[2].split('.')[0]
 
-checkpoint_dir = relative_path + 'content/saved_models/DiceCrossEntrepyAuto_enc/' + model_name
-output_dir = relative_path + 'content/saved_outputs/autoEnc/'
+checkpoint_dir = configs['misc']['checkpoint_dir']  # relative_path + 'content/saved_models/DiceCrossEntrepyAuto_enc/' + model_name
+output_dir = configs['misc']['output_dir']  # relative_path + 'content/saved_outputs/autoEnc/'
 
 
 transformations = [
@@ -62,35 +85,45 @@ transformations = [
     Crop((256, 256)),
     Normalize(76.3, 41.7)
 ]
-
-
-loader = OpenEDSLoader(root, batch_size=batch_size, shuffle=True, max_videos=None, save_path=save_path,
+shuffle = configs['data_params']['shuffle'] # True
+split_frames = configs['data_params']['split_frames']  # 6
+loader = OpenEDSLoader(root, batch_size=batch_size, shuffle=shuffle, max_videos=None, save_path=save_path,
                        save_anyway=False,
-                       transformations=transformations, sim_clr=False, split_frames=6)
+                       transformations=transformations, sim_clr=False, split_frames=split_frames)
 
 train_loader, test_loader, _ = loader.get_loaders()
 
-'''
-    model, optimizer = load_auto_encoder(arc_filename_enc, arc_filename_dec, 216,
-                                     216, lr, torch.optim.Adam, False,
-                                     2, 1e-6)
-'''
-
 lay_fac = LayerFactory()
-lay_fac.read_from_file(arc_filename_dec, full_block_res=True, res_interval=2)
+res_interval = configs['model']['res_interval'] # 2
+
+lay_fac.read_from_file(arc_filename_dec, full_block_res=True, res_interval=res_interval)
 layers_dec = lay_fac.generate_layer_array()
 
-lay_fac.read_from_file(arc_filename_enc, full_block_res=True, res_interval=2)
+lay_fac.read_from_file(arc_filename_enc, full_block_res=True, res_interval=res_interval)
 layers_enc = lay_fac.generate_layer_array()
 
-model = EncoderDecoder(layers_enc, layers_dec, 200, 200,
-                       dil_factors=(1, 2, 2), lin_bottleneck=True, lin_bottleneck_layers=3,
-                       lin_bottleneck_channels=(200 * 8 * 8, 1000, 120 * 8 * 8), stream_buffer=False)
+dil_bottle_neck_in_channels = configs['model']['dil_bottleneck']['bottleneck_input']  # 200
+dil_bottle_neck_out_channels = configs['model']['dil_bottleneck']['bottleneck_output']  # 200
+dil_factors = configs['model']['dil_bottleneck']['factors']  # (1, 2, 2)
+
+lin_bottleneck = configs['model']['linear_bottleneck']['use']  # True
+lin_layers = configs['model']['linear_bottleneck']['layers']  # 3
+lin_bottle_in = configs['model']['linear_bottleneck']['bottleneck_input']  # 200 * 8 * 8
+lin_bottle_hidden = configs['model']['linear_bottleneck']['hidden']  # 1000
+lin_bottle_out = configs['model']['linear_bottleneck']['bottleneck_output']  # 120 * 8 * 8
+
+stream_buffer = configs['model']['stream_buffer']  # False
+
+model = EncoderDecoder(layers_enc, layers_dec, dil_bottle_neck_in_channels, dil_bottle_neck_out_channels,
+                       dil_factors=dil_factors, lin_bottleneck=lin_bottleneck, lin_bottleneck_layers=lin_layers,
+                       lin_bottleneck_channels=(lin_bottle_in, lin_bottle_hidden, lin_bottle_out), stream_buffer=stream_buffer)
+
+weight_decay = configs['hyper_params']['weight_decay']  # 1e-6
 
 optimizer = torch.optim.Adam(
     [params for params in model.parameters() if params.requires_grad],
     lr=lr,
-    weight_decay=1e-6,
+    weight_decay=weight_decay,
 )
 '''
 optimizer = LARS(

@@ -1,0 +1,37 @@
+# model 4 parameters
+
+model:
+  encoder_layers: "content/Arc/model_4.csv"
+  decoder_layers: "content/Arc/model_4_reversed.csv"
+  res_interval: 2
+  dil_bottleneck:
+    bottleneck_input: 400
+    bottleneck_output: 400
+    factors: [1, 2, 2]
+  linear_bottleneck:
+    use: True
+    layers: 3
+    bottleneck_input: 25600
+    hidden: 2000
+    bottleneck_output: 4096
+    factors: !!python/tuple [1, 2, 2]
+  stream_buffer: False
+
+hyper_params:
+  training_runs: 1
+  batch_size: 32
+  log_interval: 4
+  lr: 0.0001
+  n_epochs: 100
+  max_batches: 0  # all if 0
+  weight_decay: 0.000001
+
+data_params:
+  root: "data/openEDS/openEDS"
+  save_path: "data/openEDS/openEDSSplit.npy"
+  shuffle: True
+  split_frames: 6
+
+misc:
+  checkpoint_dir: "content/saved_models/DiceCrossEntrepyAuto_enc/"
+  output_dir: "content/saved_models/DiceCrossEntrepyAuto_dec/"
