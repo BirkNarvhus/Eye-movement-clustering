@@ -11,11 +11,6 @@ import sys
 path_root = Path(__file__).parents[2]
 sys.path.append(str(path_root))
 
-Out_folder = 'content/saved_outputs/'
-Output_file = Out_folder + 'kmeans_output.npy'
-input_file = 'content/saved_outputs/model_1-feats.npy'
-do_plot = True
-
 
 class KMeansDownstream:
     """
@@ -79,6 +74,11 @@ def test():
     """
     testing downstream kmeans
     """
+
+    Out_folder = 'content/saved_outputs/'
+    Output_file = Out_folder + 'kmeans_output.npy'
+    input_file = 'content/saved_outputs/model_1-feats.npy'
+    do_plot = True
     data = np.load(input_file)
     num_clusters = 4
     kmeans = KMeansDownstream(num_clusters)
