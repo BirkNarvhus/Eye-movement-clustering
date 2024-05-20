@@ -82,7 +82,7 @@ def load_model(model_file, legacy=False, remove_decoder=False):
 
 def plot_test(model, data_loader, save=False):
     """
-    Plot(show) the test data
+    Plot(show) the test videos
     uses cv2, and might have issues with some versions of cv2 and numpy
     :param model:  the model
     :param data_loader:  the data loader
