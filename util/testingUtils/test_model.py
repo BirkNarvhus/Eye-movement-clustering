@@ -1,15 +1,34 @@
+"""
+usage:
+    python ./test_model.py <model_file> <optional: mode>
+Description:
+    Test the model with the given model file
+    The model file should be a checkpoint file
+    The mode can be None/video, kmeans, save, or svm
+    None/video:  shows the video of the autoencoder output
+    kmeans:  runs kmeans on the encoded data
+    save:  saves the video of the autoencoder output
+    svm:  runs svm on the encoded data
+
+    This is the main testing scrip for the later models
+    All non-video modes will plot the output with the PlotUtil
+    The threshold values used for IVVT are hardcoded and not optimized, but gives an ok result
+"""
+
 import os
 
 import torch
 import numpy as np
 import cv2
-import sys
 
 from sklearn import svm
 from torch import nn
 from tqdm import tqdm
 
-sys.path.append('C:\\Users\\birkn\Documents\\bachlor\\eye-movement-classification')
+import sys
+from pathlib import Path
+path_root = Path(__file__).parents[2]
+sys.path.append(str(path_root))
 
 from util.plot_tsne import PlotUtil
 from models.finalImplementations.EncoderDecoder import EncoderDecoder
@@ -28,18 +47,19 @@ Out_folder = 'content/saved_outputs/'
 
 device = "cpu" if not torch.cuda.is_available() else "cuda:0"
 
+
 def load_model(model_file, legacy=False, remove_decoder=False):
+    """
+    Load the model from the model file
+    :param model_file:  the model file
+    :param legacy:  if True, load the legacy model
+    :param remove_decoder:  if True, remove the decoder
+    :return:  the model, optimizer, epoch, best_loss, loss
+    """
     model_dir = model_file[:model_file.rfind('/')]
     model_file_name = model_file[model_file.rfind('/') + 1:]
 
     check_loader = CheckpointUtil(model_dir)
-
-
-    '''
-        model, optimizer = load_auto_encoder(arc_filename_enc, arc_filename_dec, 216,
-                                         216, lr, torch.optim.Adam, False,
-                                         2, 1e-6)
-    '''
 
     lay_fac = LayerFactory()
     lay_fac.read_from_file("content/Arc/" + "model_3_v3_reverse.csv", full_block_res=True, res_interval=2)
@@ -61,6 +81,13 @@ def load_model(model_file, legacy=False, remove_decoder=False):
 
 
 def plot_test(model, data_loader, save=False):
+    """
+    Plot(show) the test data
+    uses cv2, and might have issues with some versions of cv2 and numpy
+    :param model:  the model
+    :param data_loader:  the data loader
+    :param save:  if True, save the video
+    """
     model.eval()
     with torch.no_grad():
         batch = data_loader.__iter__().__next__()
@@ -95,6 +122,11 @@ def plot_test(model, data_loader, save=False):
 
 
 def do_kmeans(model, data_loader):
+    """
+    Run kmeans on the encoded data
+    :param model:  the model
+    :param data_loader:  the data loader
+    """
     model = model.encoder
 
     model.to(device)
@@ -125,6 +157,11 @@ def do_kmeans(model, data_loader):
 
 
 def do_svm(model, data_loader):
+    """
+    Run svm on the encoded data
+    :param model:  the model
+    :param data_loader:  the data loader
+    """
     model = model.encoder
     model.to(device)
 
@@ -159,6 +196,10 @@ def do_svm(model, data_loader):
 
 
 def main():
+    """
+    Main function for parsing model file and mode
+    calls the correct function based on the mode
+    """
     if len(sys.argv) < 2:
         print("Usage: python test_model.py <model_file> <optional: mode>")
         sys.exit(1)

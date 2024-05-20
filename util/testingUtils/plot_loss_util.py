@@ -1,14 +1,28 @@
-import os
+"""
+Usage:
+    python plot_loss_util.py <checkpoint_dir>
+Description:
+    plots the loss of the checkpoints in the checkpoint directory
+    This script sorts the checkpoints by index and plots the loss of the checkpoints
 
+"""
+import os
 import matplotlib.pyplot as plt
 
 import sys
-sys.path.append('C:\\Users\\vizlab_stud\\Documents\\pythonProjects\\eye-movement-classification')
+from pathlib import Path
+path_root = Path(__file__).parents[2]
+sys.path.append(str(path_root))
 
 from util.testingUtils.checkpointsLogging import CheckpointUtil
 
 
 def load_all_checkpoints(checkpoint_dir):
+    """
+    Load all the checkpoints in the directory
+    :param checkpoint_dir:  the directory of the checkpoints
+    :return:  the train and test loss of the checkpoints
+    """
     checkpoint_util = CheckpointUtil(checkpoint_dir)
     test_loss = []
     train_loss = []
@@ -35,6 +49,10 @@ def load_all_checkpoints(checkpoint_dir):
 
 
 def plot_loss(checkpoint_dir):
+    """
+    Plot the loss of the checkpoints
+    :param checkpoint_dir: the directory of the checkpoints
+    """
     train_loss, test_loss = load_all_checkpoints(checkpoint_dir)
     plt.plot([x[1] for x in train_loss], label="train loss")
     plt.plot([x[1] for x in test_loss], label="test loss")
@@ -43,6 +61,9 @@ def plot_loss(checkpoint_dir):
 
 
 def main():
+    """
+    Runs load and plot methods
+    """
     if len(sys.argv) < 2:
         print("Usage: python checkpointsLogging.py <checkpoint_dir>")
     checkpoint_dir = sys.argv[1]

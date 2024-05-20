@@ -1,3 +1,13 @@
+"""
+Usage:
+    python ./simClrTrainer.py <checkpoint_dir> <checkpoint_name>
+
+Description:
+    Returns the stats of the checkpoint
+
+This file contains the CheckpointUtil class for saving and loading checkpoints.
+"""
+
 import os
 import shutil
 import sys
@@ -6,10 +16,28 @@ import torch
 
 
 class CheckpointUtil:
+    """
+    Checkpoint utility class for saving and loading checkpoints.
+    """
     def __init__(self, checkpoint_dir):
+        """
+        Constructor for the CheckpointUtil class.
+        :param checkpoint_dir: the directory to save the checkpoints
+        """
         self.checkpoint_dir = checkpoint_dir
 
     def save_checkpoint(self, model, optimizer, epoch, loss, test_loss, best_loss, is_best):
+        """
+        Save the checkpoint
+        :param model:  the model to save
+        :param optimizer:  the optimizer to save
+        :param epoch:  the epoch of the checkpoint
+        :param loss:  the loss of the checkpoint
+        :param test_loss:  the test loss of the checkpoint
+        :param best_loss:  the best loss of the checkpoint
+        :param is_best:  if the checkpoint is the best
+        :return:  the filename of the saved checkpoint
+        """
         state = {
             'epoch': epoch,
             'state_dict': model.state_dict(),
@@ -31,6 +59,15 @@ class CheckpointUtil:
         return filename
 
     def load_checkpoint(self, model, optimizer, check_point_name, reset_optimizer=False, device='cpu'):
+        """
+        Load the checkpoint
+        :param model: model to load to
+        :param optimizer: optimizer to load to
+        :param check_point_name: name of the checkpoint
+        :param reset_optimizer: if True, reset the optimizer
+        :param device: device to load the model to
+        :return: model, optimizer, epoch, best_loss, loss
+        """
         filename = self.checkpoint_dir + '/' + check_point_name
         if os.path.isfile(filename):
             print("=> loading checkpoint '{}'".format(filename))
@@ -49,6 +86,11 @@ class CheckpointUtil:
             return model, optimizer, 0, 100, 100
 
     def load_checkpoint_stats(self, checkpoint_name):
+        """
+        Load the checkpoint stats
+        :param checkpoint_name:  the name of the checkpoint
+        :return:  the stats of the checkpoint
+        """
         filename = self.checkpoint_dir + "/" + checkpoint_name
         if os.path.isfile(filename):
             print("=> loading checkpoint '{}'".format(filename))
@@ -61,6 +103,13 @@ class CheckpointUtil:
 
 
 def load_checkpoint_stats(checkpoint_dir, name):
+    """
+    Load the checkpoint stats
+    Used for testing a checkpoint when running this script
+    :param checkpoint_dir: the directory of the checkpoint
+    :param name: the name of the checkpoint
+    :return: the stats of the checkpoint
+    """
     checkpoint_util = CheckpointUtil(checkpoint_dir)
     print(checkpoint_util.load_checkpoint_stats(name))
 
