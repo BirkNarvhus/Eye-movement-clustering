@@ -1,3 +1,7 @@
+"""
+This file contains data loaders for the mnist dataset
+Used in early testing of the models.
+"""
 import torch
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
@@ -43,10 +47,13 @@ def data_generator(root, batch_size, clr=False, shuffle=False):
     return train_loader, test_loader
 
 
-def main():
+def test():
+    """
+    For testing the data loader generator
+    """
     root = '../data/mnist'
     train_loader, test_loader = data_generator(root, batch_size=128)
 
 
 if __name__ == '__main__':
-    main()
+    test()

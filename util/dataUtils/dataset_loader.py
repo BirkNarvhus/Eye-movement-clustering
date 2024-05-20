@@ -1,3 +1,7 @@
+"""
+This file contains the loader for the openEDS dataset
+"""
+
 import os
 
 import numpy
@@ -8,7 +12,17 @@ from util.dataUtils.transformations import *
 
 
 class Loader:
+    """
+    Loader class for the openEDS dataset
+    """
     def __init__(self, data, batch_size=32, transformations=None, sim_clr=False):
+        """
+        Constructor for the loader
+        :param data:  the data to load
+        :param batch_size:  the size of the batch
+        :param transformations:  the transformations to apply to the data
+        :param sim_clr:  if True, the data is for simclr
+        """
         self.data = data
         self.batch_size = batch_size
         self.currBatch = 0
@@ -30,10 +44,19 @@ class Loader:
             return self.data[self.currBatch:]
 
     def __iter__(self):
+        """
+        Iterator for the loader
+        resets the current batch
+        :return: the loader
+        """
         self.currBatch = 0
         return self
 
     def __next__(self):
+        """
+        Get the next batch, with applied transformations
+        :return: the next batch
+        """
         if self.currBatch + self.batch_size < len(self.data):
             bach = self.get_batch()
             return (torch.tensor(numpy.expand_dims(self.apply_transformation(bach), axis=1), dtype=torch.float32),
@@ -61,8 +84,26 @@ class Loader:
 
 
 class OpenEDSLoader:
+    """
+    Class to load the openEDS dataset
+    and split it into train, validation and test sets
+    Uses the Loader class to load the data, and apply transformations
+    This will be the dataset class
+    """
     def __init__(self, root, batch_size=32, shuffle=True, max_videos=None, save_path=None, save_anyway=False,
                  transformations=None, sim_clr=False, split_frames=None):
+        """
+
+        :param root:  the root directory of the dataset
+        :param batch_size:  the size of the batch
+        :param shuffle:  if True, shuffle the data
+        :param max_videos:  the maximum number of videos to load
+        :param save_path:  the path to save the data
+        :param save_anyway:  if True, save the data anyway
+        :param transformations:  the transformations to apply to the data
+        :param sim_clr:  if True, the data is for simclr
+        :param split_frames:  the number of frames to split the data into
+        """
         self.root = root
         self.videos = (os.listdir(root))[2:]
         self.max_videos = max_videos
@@ -87,6 +128,7 @@ class OpenEDSLoader:
     def load_data(self):
         """
         Load the data from the root directory
+        If split flames is not None, split the data into the specified number of frames
         :return: a list of numpy arrays
         """
         if self.save_path is not None and os.path.exists(self.save_path) and not self.save_anyway:
@@ -153,6 +195,9 @@ class OpenEDSLoader:
 
 
 def test():
+    """
+    Test the openEDS loader
+    """
     root = '../data/openEDS/openEDS'
     save_path = '../../data/openEDS/openEDSSplit.npy'
 
@@ -187,6 +232,7 @@ def test():
     print("mean:" + str(np.mean(data)) + "   STD:" + str(np.std(data)))
     
     '''
+
 
 if __name__ == '__main__':
     test()
