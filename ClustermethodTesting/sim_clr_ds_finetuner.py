@@ -1,14 +1,15 @@
 """
 Usage:
-    python ./simClrTrainer.py <checkpoint_path>
+    python ./sim_clr_ds_finetuner.py <checkpoint_path>
 Description:
-    Test acc of the model from the checkpoint
+    Adds a classifier to the clr model
+    Trains the model on the mnist dataset
+    Tests the model acc on the mnist dataset
 """
 
 
 import os
 import sys
-import time
 
 import numpy as np
 from torch import nn
@@ -44,7 +45,6 @@ def main():
 
     for epoch in range(20):
 
-        stime = time.time()
         print("=============== Epoch : %3d ===============" % (epoch + 1))
 
         loss_sublist = np.array([])
@@ -63,14 +63,12 @@ def main():
 
             dsoptimizer.zero_grad()
 
-            tr_loss = loss_fn(z, y)  # /accumulation_steps #y.to(dtype=torch.float), z)
+            tr_loss = loss_fn(z, y)
             tr_loss.backward()
 
             preds = z.detach()
 
-            # if (iter_num+1)%accumulation_steps==0:
             dsoptimizer.step()
-            # dsoptimizer.zero_grad()
 
             loss_sublist = np.append(loss_sublist, tr_loss.cpu().data)
             acc_sublist = np.append(acc_sublist,
@@ -78,18 +76,8 @@ def main():
 
             # iter_num+=1
 
-        print('ESTIMATING TRAINING METRICS.............')
-
-        print('TRAINING BINARY CROSSENTROPY LOSS: ', np.mean(loss_sublist))
-        print('TRAINING BINARY ACCURACY: ', np.mean(acc_sublist))
-        # print('TRAINING AUC SCORE: ',roc_auc_score(gt,preds))
-
-        tr_ep_loss.append(np.mean(loss_sublist))
-        tr_ep_acc.append(np.mean(acc_sublist))
-
-        # tr_ep_auc.append(roc_auc_score(gt, preds))
-
-        print('ESTIMATING VALIDATION METRICS.............')
+        print('Loss avg ', np.mean(loss_sublist))
+        print('Acc avg ', np.mean(acc_sublist))
 
         dsmodel.eval()
 
@@ -111,18 +99,10 @@ def main():
                                         np.array(np.argmax(preds, axis=1) == y.cpu().data.view(-1)).astype('int'),
                                         axis=0)
 
-        print('VALIDATION BINARY CROSSENTROPY LOSS: ', np.mean(loss_sublist))
-        print('VALIDATION BINARY ACCURACY: ', np.mean(acc_sublist))
-        # print('VALIDATION AUC SCORE: ',roc_auc_score(gt, preds))
-
-        val_ep_loss.append(np.mean(loss_sublist))
-        val_ep_acc.append(np.mean(acc_sublist))
-
-        # val_ep_auc.append(roc_auc_score(gt, preds))
+        print('Val loss avg ', np.mean(loss_sublist))
+        print('Val acc avg ', np.mean(acc_sublist))
 
         lr_scheduler.step()
-
-        print("Time Taken : %.2f minutes" % ((time.time() - stime) / 60.0))
 
     pytorch_total_params = sum(p.numel() for p in dsmodel.parameters())
     print('Number of params: {}'.format(pytorch_total_params))
