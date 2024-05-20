@@ -1,7 +1,14 @@
+"""
+This file contains the implementation of custom loss functions.
+"""
+
 import torch.nn
 
 
 class DiceLoss(torch.nn.Module):
+    """
+    This class is used to calculate the Dice loss.
+    """
     def __init__(self):
         super(DiceLoss, self).__init__()
 
@@ -10,6 +17,9 @@ class DiceLoss(torch.nn.Module):
 
 
 class BceDiceLoss(torch.nn.Module):
+    """
+    This class is used to calculate the BCE Dice loss.
+    """
     def __init__(self):
         super(BceDiceLoss, self).__init__()
         self.bce = torch.nn.BCELoss()
@@ -21,6 +31,9 @@ class BceDiceLoss(torch.nn.Module):
 
 
 class DiceCrossEntrepy(torch.nn.Module):
+    """
+    This class is used to calculate the Dice Cross Entropy loss.
+    """
     def __init__(self):
         super(DiceCrossEntrepy, self).__init__()
         self.dice = DiceLoss()

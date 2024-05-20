@@ -2,7 +2,7 @@ import torch
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 
-from util.clr_dataset import ClrDataset
+from util.dataUtils.clr_dataset import ClrDataset
 
 
 def data_generator(root, batch_size, clr=False, shuffle=False):

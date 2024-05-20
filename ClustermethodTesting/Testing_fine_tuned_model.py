@@ -1,14 +1,8 @@
-import numpy as np
 import torch
-from sklearn.manifold import TSNE
-from tqdm import tqdm
 
-from models.autoEncoder import AutoEncoder
-from models.Pretrained_classifier import finetuned_encoder_classifier
-from util.data import data_generator
-from matplotlib import pyplot as plt
-
-from util.plot_tsne import PlotUtil
+from models.pre_tests.autoEncoder import AutoEncoder
+from models.pre_tests.Pretrained_classifier import finetuned_encoder_classifier
+from util.dataUtils.data import data_generator
 
 root = '../data/mnist'
 

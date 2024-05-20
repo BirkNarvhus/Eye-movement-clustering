@@ -126,27 +126,6 @@ class Encoder(nn.Module):
                 Residual_Block3d(layer[0], layer[1], special_down_sample=layer[2], temp_stride=layer[3],
                                  dilation_size=layer[4], num_blocks=layer[5]))
 
-        # only do this when fine tuneing
-
-        #self.flatten = nn.Flatten()
-        #linear_input_size = int(layers[-1][1] * ((input_size / (numpy.prod([x[2] for x in layers]) * 2)) ** (1 if global_pooling else 2)))
-        #print("linear_input_size: ", linear_input_size)
-        #linear_input_size = 27648 # TODO: remove this line
-        #self.linear = nn.Linear(linear_input_size, bottleneck_output * 2)
-        #self.linear2 = nn.Linear(bottleneck_output * 2, bottleneck_output)
-
-        #bottleneck_layer = nn.ModuleList()
-
-        #self.global_pool = Cumulativ_global_pooling() if global_pooling else None
-        #if global_pooling:
-        #    bottleneck_layer.append(self.global_pool)
-
-        #bottleneck_layer.append(self.flatten)
-        #bottleneck_layer.append(self.linear)
-        #bottleneck_layer.append(nn.ReLU())
-        #bottleneck_layer.append(self.linear2)
-        #self.bottleneck = nn.Sequential(*bottleneck_layer)
-
         self.conv_net = nn.Sequential(self.down_sample_special, *self.conv_layers)
 
     def forward(self, x):

@@ -4,18 +4,20 @@ import torch
 import numpy as np
 import cv2
 import sys
+
+from sklearn import svm
 from torch import nn
 from tqdm import tqdm
 
-sys.path.append('C:\\Users\\vizlab_stud\\Documents\\pythonProjects\\eye-movement-classification')
+sys.path.append('C:\\Users\\birkn\Documents\\bachlor\\eye-movement-classification')
 
-from models.cleandup.kMeansDownstream import KMeansDownstream
 from util.plot_tsne import PlotUtil
-from models.cleandup.EncoderDecoder import EncoderDecoder
+from models.finalImplementations.EncoderDecoder import EncoderDecoder
 from util.testingUtils.checkpointsLogging import CheckpointUtil
-from util.dataset_loader import OpenEDSLoader
+from util.dataUtils.dataset_loader import OpenEDSLoader
 from util.layerFactory import LayerFactory
-from util.transformations import Crop_top, TempStride, Crop, Normalize
+from util.dataUtils.transformations import Crop_top, Crop, Normalize
+from util.ivtUtil.IVVt import IvvtHelper
 
 relative_path = ""  # "../"
 
@@ -30,12 +32,6 @@ def load_model(model_file, legacy=False, remove_decoder=False):
     model_dir = model_file[:model_file.rfind('/')]
     model_file_name = model_file[model_file.rfind('/') + 1:]
 
-    transformations = [
-        Crop_top(20),  # centers the image better
-        Crop((256, 256)),
-        Normalize(76.3, 41.7)
-    ]
-
     check_loader = CheckpointUtil(model_dir)
 
 
@@ -46,15 +42,15 @@ def load_model(model_file, legacy=False, remove_decoder=False):
     '''
 
     lay_fac = LayerFactory()
-    lay_fac.read_from_file("content/Arc/" + "model_5_reverse.csv", full_block_res=True, res_interval=2)
+    lay_fac.read_from_file("content/Arc/" + "model_3_v3_reverse.csv", full_block_res=True, res_interval=2)
     layers_dec = lay_fac.generate_layer_array()
 
-    lay_fac.read_from_file("content/Arc/" + "model_5.csv", full_block_res=True, res_interval=2)
+    lay_fac.read_from_file("content/Arc/" + "model_4.csv", full_block_res=True, res_interval=2)
     layers_enc = lay_fac.generate_layer_array()
 
-    model = EncoderDecoder(layers_enc, layers_dec, 200, 200,
+    model = EncoderDecoder(layers_enc, layers_dec, 400, 400,
                            dil_factors=(1, 2, 2), lin_bottleneck=True, lin_bottleneck_layers=3,
-                           lin_bottleneck_channels=(200 * 8 * 8, 1000, 120 * 8 * 8), stream_buffer=False)
+                           lin_bottleneck_channels=(400*8*8, 2000, 4096), stream_buffer=False)
 
     optimizer = torch.optim.Adam(
         [params for params in model.parameters() if params.requires_grad],
@@ -99,6 +95,8 @@ def plot_test(model, data_loader, save=False):
 
 
 def do_kmeans(model, data_loader):
+    model = model.encoder
+
     model.to(device)
 
     flatten = nn.Flatten()
@@ -106,26 +104,58 @@ def do_kmeans(model, data_loader):
     with (torch.no_grad()):
         print("Encoding with model")
         output_buffer = torch.tensor([])
+        target_buffer = []
+
+        ivvtHelper = IvvtHelper(sacadeThreshold=0.45, smoothperThreshold=0.15)
         for batch in tqdm(data_loader):
             batch = batch.to(device)
+            target_buffer.append(ivvtHelper.classify_bach(batch * 41.7 + 76.3))
             encoder_output = model(batch)
+
             if output_buffer.shape[0] == 0:
                 output_buffer = flatten(encoder_output).cpu().detach()
             else:
                 output_buffer = torch.cat([output_buffer, flatten(encoder_output).cpu().detach()], 0)
-
+        target_buffer = [x for sublist in target_buffer for x in sublist]
         print("Encoded data shape: ", output_buffer.shape)
         print("Running KMeans on the encoded data...")
+        pUtil = PlotUtil(output_buffer, "KMeans Downstream Auto enc", mode="mds", root=Out_folder, show=True, dims=2,
+                 kmeans_after=True)
+        pUtil.plot_tsne(targets_reg_alg=target_buffer)
 
-        # do kmeans on the output_buffer
-        kmds = KMeansDownstream(4)
-        kmds.fit(output_buffer)
-        print("KMeans Done, plotting...")
-        print(output_buffer.shape)
 
-        PlotUtil(output_buffer, "KMeans Downstream Auto enc", mode="TSNE", root=Out_folder, show=True, dims=3
-                 ).plot_tsne_centers(kmds.get_cluster_centers())
-        kmds.save(Out_folder + 'kmeans_output.npy')
+def do_svm(model, data_loader):
+    model = model.encoder
+    model.to(device)
+
+    flatten = nn.Flatten()
+    model.eval()
+    with (torch.no_grad()):
+        print("Encoding with model")
+        output_buffer = torch.tensor([])
+        target_buffer = []
+
+        ivvtHelper = IvvtHelper(sacadeThreshold=0.45, smoothperThreshold=0.15)
+        for batch in tqdm(data_loader):
+            batch = batch.to(device)
+            target_buffer.append(ivvtHelper.classify_bach(batch * 41.7 + 76.3))
+            encoder_output = model(batch)
+
+            if output_buffer.shape[0] == 0:
+                output_buffer = flatten(encoder_output).cpu().detach()
+            else:
+                output_buffer = torch.cat([output_buffer, flatten(encoder_output).cpu().detach()], 0)
+        target_buffer = [x for sublist in target_buffer for x in sublist]
+
+        print("Encoded data shape: ", output_buffer.shape)
+        print("Running svm on the encoded data...")
+
+        supportvector = svm.SVC()
+        supportvector.fit(output_buffer, target_buffer)
+        targets = supportvector.predict(output_buffer)
+        pUtil = PlotUtil(output_buffer, "SVM downstream", mode="kpca", root=Out_folder, show=True, dims=2,
+                         kmeans_after=False)
+        pUtil.plot_tsne(targets=targets, targets_reg_alg=target_buffer)
 
 
 def main():
@@ -139,6 +169,8 @@ def main():
             print("Running kmeans")
         elif mode == "save":
             print("Running and saving autoencoder output to: ", Out_folder)
+        elif mode == "svm":
+            print("Running svm")
         else:
             print("Could Not find mode: ", mode)
             sys.exit(1)
@@ -147,7 +179,6 @@ def main():
     print("Loaded model from file: ", sys.argv[1])
     print("model stats: epoch: ", epoch, " best_loss: ", best_loss, " loss: ", loss)
     transformations = [
-        TempStride(2),
         Crop_top(20),  # centers the image better
         Crop((256, 256)),
         Normalize(76.3, 41.7)
@@ -160,6 +191,8 @@ def main():
     train_loader, test_loader, _ = loader.get_loaders()
     if mode == "kmeans":
         do_kmeans(model, train_loader)
+    elif mode == "svm":
+        do_svm(model, train_loader)
     else:
         plot_test(model, train_loader, save=(mode == "save"))
 

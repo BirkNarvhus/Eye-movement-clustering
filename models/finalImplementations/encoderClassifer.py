@@ -1,16 +1,31 @@
+"""
+This file contains the Encoder_classifier class which is a model that combines the Encoder and the Classifier
+"""
+
+from pathlib import Path
+
 import torch
 from torch import nn
 import sys
+path_root = Path(__file__).parents[2]
+sys.path.append(str(path_root))
 
-sys.path.append('C:\\Users\\vizlab_stud\\Documents\\pythonProjects\\eye-movement-classification')
-
-from models.cleandup.Blocks import DownsampleLayer, Cumulativ_global_pooling, Projection, MultiResLayer
+from models.finalImplementations.Blocks import DownsampleLayer, Cumulativ_global_pooling, Projection, MultiResLayer
 from util.layerFactory import LayerFactory
 from util.modelUtils import get_n_params
 
 
 class Encoder(nn.Module):
+    """
+    Encoder class that takes a list of layers and creates a model from them
+    Uses DownsampleLayer and MultiResLayer depending on the block type
+    """
     def __init__(self, layers, stream_buffer=True):
+        """
+
+        :param layers: Layers from layer fac
+        :param stream_buffer: If true, the model will use a stream buffer to save memory
+        """
         super(Encoder, self).__init__()
 
         self.convLayers = nn.ModuleList()
@@ -30,7 +45,15 @@ class Encoder(nn.Module):
                                                        kernels_size=[[y[1] for y in x] for x in layer]))
 
         self.net = nn.Sequential(*self.convLayers)
+
     def forward(self, x):
+        """
+        Forward pass of the model
+        Implements the stream buffer
+        :param x: input tensor
+        :return: output tensor
+        """
+
         if not self.stream_buffer:
             return self.net(x)
         buffer = list(x.split(10, 2))
@@ -59,6 +82,10 @@ class Encoder(nn.Module):
 
 
 class BottleNeck(nn.Module):
+    """
+    Linear bottleneck class that takes a flattened input and creates a linear model from it
+    Uses two linear layers with a relu activation
+    """
     def __init__(self, flattend_out, hidden_features, classes):
         super(BottleNeck, self).__init__()
 
@@ -74,7 +101,19 @@ class BottleNeck(nn.Module):
 
 
 class Encoder_classifier(nn.Module):
+    """
+    Encoder_classifier class that takes a layer fac, data size and output size to create a model
+    Uses the Encoder and the BottleNeck class
+    Used in contrastiv learning model
+    """
     def __init__(self, layer_fac, data_size, output_size, hidden_encoder_pro=134, hidden_linear_features=500):
+        """
+        :param layer_fac: Layer factory object
+        :param data_size: Size of the data
+        :param output_size: Size of the output
+        :param hidden_encoder_pro: Hidden features of the encoder
+        :param hidden_linear_features: Hidden features of the linear model
+        """
         super(Encoder_classifier, self).__init__()
         self.encoder = Encoder(layer_fac.generate_layer_array())
 
@@ -101,6 +140,9 @@ class Encoder_classifier(nn.Module):
 
 
 def test():
+    """
+    Test function for the Encoder_classifier class
+    """
     layerfac = LayerFactory()
 
     filename = "Arc/model_1.csv"

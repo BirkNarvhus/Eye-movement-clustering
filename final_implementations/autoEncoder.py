@@ -1,9 +1,8 @@
 import torch
 from torch import nn
 
-from models.autoencoder_3d import AutoEncoder
-from util.data import data_generator
-from util.dataset_loader import OpenEDSLoader
+from models.pre_tests.autoencoder_3d import AutoEncoder
+from util.dataUtils.dataset_loader import OpenEDSLoader
 
 epochs = 5
 batch_size = 32

@@ -1,8 +1,15 @@
+"""
+This file contains the implementation of the blocks used in the final implementation of the model.
+"""
+
 from torch import nn
 import torch
 
 
 class Cumulativ_global_pooling(nn.Module):
+    """
+    This class is used to apply a global pooling on the input tensor.
+    """
     def __init__(self):
         super(Cumulativ_global_pooling, self).__init__()
 
@@ -11,6 +18,9 @@ class Cumulativ_global_pooling(nn.Module):
 
 
 class Chomp1d(nn.Module):
+    """
+    This class is used to remove the padding from the temporal convolution.
+    """
     def __init__(self, chomp_size):
         super(Chomp1d, self).__init__()
         self.chomp_size = chomp_size
@@ -20,7 +30,20 @@ class Chomp1d(nn.Module):
 
 
 class TempConvBlock(nn.Module):
+    """
+    This class is used to apply a temporal convolution on the input tensor.
+    If casual convolution is used, then apply 2+1D convolution.
+    """
     def __init__(self, input_channels, output_channels, kernel_size=(3, 3, 3), stride=1, padding=1, dilation_size=1, causel=True):
+        """
+        :param input_channels: Number of input channels.
+        :param output_channels: Number of output channels.
+        :param kernel_size: Size of the kernel.
+        :param stride:  Stride of the convolution.
+        :param padding: Padding of the convolution.
+        :param dilation_size: Dilation of the convolution.
+        :param causel: If True, apply 2+1D convolution with casual conv in temp dim.
+        """
         super(TempConvBlock, self).__init__()
 
         zero_padding = (0 if causel else kernel_size[0] // 2, kernel_size[1] // 2, kernel_size[2] // 2)
@@ -49,6 +72,10 @@ class TempConvBlock(nn.Module):
 
 
 class Projection(nn.Module):
+    """
+    This class is used to apply a projection on the input tensor.
+    changes num channels with 1x1x1 convolution.
+    """
     def __init__(self, channels):
         super(Projection, self).__init__()
         self.projection = nn.Conv3d(channels[0], channels[1], kernel_size=(1, 1, 1), stride=1, padding=0)
@@ -58,8 +85,21 @@ class Projection(nn.Module):
 
 
 class ResBlock(nn.Module):
+    """
+    This class is used to apply a residual block on the input tensor.
+    uses TempConvBlock and Projection.
+    used leakyRelu, BatchNorm3d and Dropout.
+    """
     def __init__(self, channels=((64, 128), (128, 64)), kernels_size=((3, 3, 3), (3, 3, 3)), stride=1, padding=1,
                  dilation=1,  causel=True):
+        """
+        :param channels: List of channels for each layer.
+        :param kernels_size: List of kernel sizes for each layer.
+        :param stride: Stride of the convolution.
+        :param padding: Padding of the convolution.
+        :param dilation: Dilation of the convolution.
+        :param causel: If True, apply 2+1D convolution with casual conv in temp dim.
+        """
         super(ResBlock, self).__init__()
 
         modList = nn.ModuleList()
@@ -90,6 +130,10 @@ class ResBlock(nn.Module):
 
 
 class MultiResLayer(nn.Module):
+    """
+    This class is used to apply multiple residual blocks on the input tensor.
+    uses ResBlock in sequential format
+    """
     def __init__(self, channels, kernels_size=(((3, 3, 3), (3, 3, 3), (3, 3, 3)), ((3, 3, 3), (3, 3, 3), (3, 3, 3))),
                  stride=1, padding=1, dilation=1, causel=True):
         super(MultiResLayer, self).__init__()
@@ -114,6 +158,11 @@ class MultiResLayer(nn.Module):
 
 
 class DownsampleLayer(nn.Module):
+    """
+    This class is used to apply a downsample layer on the input tensor.
+    uses AvgPool3d and MultiResLayer.
+    This will be the full block in arc file
+    """
     def __init__(self, channels, kernels_size=((3, 3, 3), (3, 3, 3), (3, 3, 3)), stride=1, padding=1):
         super(DownsampleLayer, self).__init__()
         self.downsample = nn.AvgPool3d((1, 2, 2), (1, 2, 2))
@@ -125,9 +174,12 @@ class DownsampleLayer(nn.Module):
         return self.net(x)
 
 
-class temp_upsample(nn.Module):
+class TransposedConvUpsampling(nn.Module):
+    """
+    This class is used to apply transposed conv upsampling on the input tensor.
+    """
     def __init__(self, in_channels, kernel_size=(2, 1, 1), stride=1):
-        super(temp_upsample, self).__init__()
+        super(TransposedConvUpsampling, self).__init__()
         self.conv = nn.ConvTranspose3d(in_channels, in_channels, kernel_size=kernel_size, stride=stride)
 
     def forward(self, x):
@@ -135,6 +187,10 @@ class temp_upsample(nn.Module):
 
 
 class UpsampleLayer(nn.Module):
+    """
+    simular to DownsampleLayer but uses Upsample instead of AvgPool3d
+    uses 3dUpsample with interpolation and MultiResLayer.
+    """
     def __init__(self, channels, kernels_size=((3, 3, 3), (3, 3, 3), (3, 3, 3)), stride=1, padding=1,
                  upscale_kernel=(2, 2, 2), causel=False):
         super(UpsampleLayer, self).__init__()
@@ -148,6 +204,9 @@ class UpsampleLayer(nn.Module):
 
 
 def test():
+    """
+    test function of the blocks.
+    """
     model = ResBlock()
     x = torch.randn(5, 64, 10, 32, 32)
     print(model(x).shape)

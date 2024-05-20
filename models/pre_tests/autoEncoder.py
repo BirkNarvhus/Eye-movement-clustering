@@ -10,13 +10,13 @@ class Encoder(nn.Module):
         self.conv3 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0)
         self.flatten = nn.Flatten()
         self.linear = nn.Linear(64*3*3, output_channels*7*7)
-        self.softmax = nn.Softmax(dim=1)
+        self.sigmoid = nn.Sigmoid()
 
         self.maxPool = nn.MaxPool2d(2)
         self.relu = nn.ReLU()
 
         self.net = nn.Sequential(self.conv1, self.relu, self.maxPool, self.conv2, self.relu, self.maxPool, self.conv3,
-                                 self.relu, self.flatten, self.linear, self.softmax)
+                                 self.relu, self.flatten, self.linear, self.sigmoid)
 
     def forward(self, x):
         return self.net(x)
@@ -45,14 +45,16 @@ class Decoder(nn.Module):
 
 
 class AutoEncoder(nn.Module):
-    def __init__(self, input_channels, hidden_channels, output_channels):
+    def __init__(self, input_channels, hidden_channels, output_channels, turn_off_decoder=False):
         super(AutoEncoder, self).__init__()
         self.encoder = Encoder(input_channels, hidden_channels)
         self.decoder = Decoder(hidden_channels, output_channels)
+        self.turn_off_decoder = turn_off_decoder
 
     def forward(self, x):
         x = self.encoder(x)
-        x = self.decoder(x)
+        if not self.turn_off_decoder:
+            x = self.decoder(x)
         return x
 
 

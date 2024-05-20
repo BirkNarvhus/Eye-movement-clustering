@@ -1,15 +1,11 @@
 import os
 
-from sklearn.manifold import TSNE
-
-from models.larsOptim import LARS
-from util.data import data_generator
-import torch.nn as nn
+from models.pre_tests.larsOptim import LARS
+from util.dataUtils.data import data_generator
 import numpy as np
 import torch
-from models.simpleCnn import SimpleCnn
-from models.simClrLoss import SimCLR_Loss
-import matplotlib.pyplot as plt
+from models.pre_tests.simpleCnn import SimpleCnn
+from models.pre_tests.simClrLoss import SimCLR_Loss
 
 from util.plot_tsne import PlotUtil
 
@@ -24,7 +20,7 @@ batch_size = 128
 log_interval = 5
 lr = 0.001
 input_size = 1
-n_epochs = 5
+n_epochs = 100
 steps = 0
 max_batches = 5 # all if 0
 permute = False
@@ -77,8 +73,11 @@ def plot_features(model, num_classes, num_feats, batch_size):
             feats = np.append(feats, out, axis=0)
             target = target.cpu().data.numpy().reshape((-1, 1))
             targets = np.append(targets, target, axis=0)
-    plt_util = PlotUtil(feats, targets, "t-SNE")
+    plt_util = PlotUtil(feats, "test", "t-SNE")
     plt_util.plot_tsne()
+
+
+
 
 
 def save_model(model, optimizer, current_epoch, name):

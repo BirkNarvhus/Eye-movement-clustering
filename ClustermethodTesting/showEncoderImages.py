@@ -1,7 +1,7 @@
 import torch
 
-from models.autoEncoder import AutoEncoder
-from util.data import data_generator
+from models.pre_tests.autoEncoder import AutoEncoder
+from util.dataUtils.data import data_generator
 from matplotlib import pyplot as plt
 
 root = '../data/mnist'

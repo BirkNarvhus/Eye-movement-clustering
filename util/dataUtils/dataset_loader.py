@@ -4,8 +4,7 @@ import numpy
 import numpy as np
 import torch
 from tqdm import tqdm
-from matplotlib import pyplot as plt
-from util.transformations import *
+from util.dataUtils.transformations import *
 
 
 class Loader:
@@ -155,7 +154,7 @@ class OpenEDSLoader:
 
 def test():
     root = '../data/openEDS/openEDS'
-    save_path = '../data/openEDS/openEDSSplit.npy'
+    save_path = '../../data/openEDS/openEDSSplit.npy'
 
     transformations = [
         Crop_top(20),  # centers the image better

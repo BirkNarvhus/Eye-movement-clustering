@@ -30,11 +30,11 @@ class CheckpointUtil:
 
         return filename
 
-    def load_checkpoint(self, model, optimizer, check_point_name, reset_optimizer=False):
+    def load_checkpoint(self, model, optimizer, check_point_name, reset_optimizer=False, device='cpu'):
         filename = self.checkpoint_dir + '/' + check_point_name
         if os.path.isfile(filename):
             print("=> loading checkpoint '{}'".format(filename))
-            checkpoint = torch.load(filename)
+            checkpoint = torch.load(filename, map_location=device)
             epoch = checkpoint['epoch']
             best_loss = checkpoint['best_loss']
             loss = checkpoint['loss']

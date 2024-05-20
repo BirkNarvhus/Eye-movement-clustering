@@ -2,7 +2,7 @@ import torch
 from sklearn.manifold import TSNE
 import numpy as np
 import matplotlib.pyplot as plt
-from util.data import data_generator
+from util.dataUtils.data import data_generator
 
 def model(x):
     return torch.randn((x.shape[0], 128))

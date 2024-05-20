@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from models.autoEncoder import Encoder
+from models.pre_tests.autoEncoder import Encoder
 
 
 class finetuned_encoder_classifier(nn.Module):

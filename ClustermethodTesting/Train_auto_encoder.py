@@ -1,8 +1,8 @@
 import torch
 from torch import nn
 
-from models.autoEncoder import AutoEncoder
-from util.data import data_generator
+from models.pre_tests.autoEncoder import AutoEncoder
+from util.dataUtils.data import data_generator
 
 epochs = 5
 batch_size = 128

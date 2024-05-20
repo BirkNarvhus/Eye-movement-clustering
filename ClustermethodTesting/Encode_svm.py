@@ -2,16 +2,16 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-from models.autoEncoder import AutoEncoder
-from util.data import data_generator
-from matplotlib import pyplot as plt
+from models.pre_tests.autoEncoder import AutoEncoder
+from models.pre_tests.simpleCnn import SimpleCnn
+from util.dataUtils.data import data_generator
 from sklearn.svm import SVC
 import pandas as pd
 
 root = '../data/mnist'
 
 max_batches = 0
-num_feats = 3*7*7
+num_feats = 64
 batch_size = 128
 
 device = "cpu"
@@ -22,6 +22,9 @@ def main():
     auto_encoder = AutoEncoder(1, 3, 1)
     auto_encoder.load_state_dict(torch.load("../content/saved_models/auto_encoder.pth"))
     encoder = auto_encoder.encoder
+
+    encoder = SimpleCnn(1, 64)
+    encoder.load_state_dict(torch.load("../content/saved_models/simclr_model_100.pth")['model_state_dict'])
     encoder.eval()
     train_loader, test_loader = data_generator(root, batch_size, clr=False, shuffle=True)
 

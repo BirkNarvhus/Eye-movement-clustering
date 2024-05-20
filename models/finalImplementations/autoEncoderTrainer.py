@@ -1,23 +1,31 @@
-import os
+"""
+Usage:
+    python ./autoEncoderTrainer.py <optional: model_file>
 
-from torch import nn
+Description:
+    This scripts trains the auto-encoder model. The model is trained on the OpenEDS dataset.
+    The model is trained using adam optimizer. Can load previous model from a checkpoint file.
+
+"""
+
+import os
+from pathlib import Path
+
 import torch
 from datetime import datetime
 import warnings
 
 
 import sys
+path_root = Path(__file__).parents[2]
+sys.path.append(str(path_root))
 
-
-
-sys.path.append('C:\\Users\\vizlab_stud\\Documents\\pythonProjects\\eye-movement-classification')
-
-from models.cleandup.EncoderDecoder import SmoothenGradiantWithHubertLoss, EncoderDecoder
+from models.finalImplementations.EncoderDecoder import EncoderDecoder
 from util.layerFactory import LayerFactory
 from util.testingUtils.checkpointsLogging import CheckpointUtil
-from util.dataset_loader import OpenEDSLoader
-from util.transformations import *
-from models.cleandup.customLoss import DiceCrossEntrepy
+from util.dataUtils.dataset_loader import OpenEDSLoader
+from util.dataUtils.transformations import *
+from models.finalImplementations.customLoss import DiceCrossEntrepy
 
 warnings.simplefilter("ignore", UserWarning)
 

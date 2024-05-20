@@ -1,9 +1,18 @@
+"""
+Usage:
+    python ./simClrTrainer.py
+Description:
+    Necessary classes for constructing the auto-encoder.
+    Running script is for testing auto-encoder
+
+"""
+
+
 import torch
 from torch import nn
-from models.cleandup.encoderClassifer import Encoder
-from models.cleandup.Blocks import TempConvBlock, UpsampleLayer, MultiResLayer, Projection, Cumulativ_global_pooling
+from models.finalImplementations.encoderClassifer import Encoder
+from models.finalImplementations.Blocks import TempConvBlock, UpsampleLayer, MultiResLayer, Projection, Cumulativ_global_pooling
 from util.layerFactory import LayerFactory
-from util.modelUtils import get_n_params
 from torchinfo import summary
 
 
@@ -64,7 +73,16 @@ class Linenar_bottleneck(nn.Module):
 
 
 class Decoder(nn.Module):
+    """
+    Class for building the decoder.
+    Uses layers generated from layerFac
+    up-sampeling is done with upsample3d with interpolation.
+    """
     def __init__(self, layers):
+        """
+        generates network
+        :param layers: layers from layerfac
+        """
         super(Decoder, self).__init__()
 
         self.convLayers = nn.ModuleList()
@@ -101,7 +119,14 @@ class Decoder(nn.Module):
 
 
 class Unsqeeze(nn.Module):
+    """
+    Unsqeeze layer to add a dim in forward pass
+    """
     def __init__(self, dim):
+        """
+        where to add dim
+        :param dim: int
+        """
         super(Unsqeeze, self).__init__()
         self.dim = dim
 
@@ -110,7 +135,13 @@ class Unsqeeze(nn.Module):
 
 
 class Resize(nn.Module):
+    """
+    Reshape layer in forward pass
+    """
     def __init__(self, size):
+        """
+        :param size: new size
+        """
         super(Resize, self).__init__()
         self.size = size
 
@@ -119,9 +150,28 @@ class Resize(nn.Module):
 
 
 class EncoderDecoder(nn.Module):
+    """
+    Encoder decoder used to generate auto-encoder
+    Contains backwards compatibility with older saved model checkpoints
+    """
     def __init__(self, encoder_layers, decoder_layers, bottleneck_input_channels, bottleneck_output_channels,
                  remove_decoder=False, legacy=False, lin_bottleneck=False, lin_bottleneck_layers=1,
                  lin_bottleneck_channels=(216*8*8, 216*8*8, 216*8*8), dil_factors=(1, 2, 4, 8), stream_buffer=True):
+        """
+        Generates the model net
+
+        :param encoder_layers: Layers of encoder from layer fac
+        :param decoder_layers: Layers of decoder form layer fac
+        :param bottleneck_input_channels: Input feature size of dilation bottleneck
+        :param bottleneck_output_channels: Output feature size of dilation bottleneck
+        :param remove_decoder: bool Remove decoder in forward pass (for backwards compatibility)
+        :param legacy: bool Use legacy Auto-encoder structure
+        :param lin_bottleneck: bool Use linear bottleneck
+        :param lin_bottleneck_layers: int num layers in linear bottleneck
+        :param lin_bottleneck_channels: List of linear bottleneck channels
+        :param dil_factors: List of dilation bottleneck factors
+        :param stream_buffer: Bool use stream buffer
+        """
         super(EncoderDecoder, self).__init__()
         self.init_down_size = nn.Conv3d(1, 16, (1, 1, 1), stride=(1, 2, 2), padding=0)
         self.encoder = Encoder(encoder_layers, stream_buffer=stream_buffer)

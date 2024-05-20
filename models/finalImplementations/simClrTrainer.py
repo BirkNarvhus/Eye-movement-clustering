@@ -1,21 +1,36 @@
+"""
+Usage:
+    python ./simClrTrainer.py
+
+Description:
+    This script trains a model using the SimCLR loss function. The model is trained on the OpenEDS dataset. The model
+    is trained using the Encoder_classifier class. The model is saved to a checkpoint file in the content/saved_models
+    directory. The model is trained for 1 epoch. The model is trained using the Adam optimizer. The model has also been
+    tested with lars optimizer. The sim-clr loss function can be found in models/pre_tests/simClrLoss.py. This is an
+    example of a contrastiv model.
+
+"""
+
+from pathlib import Path
+
 from tqdm import tqdm
 import numpy as np
 import torch
 from datetime import datetime
 import warnings
 
-
 import sys
-sys.path.append('C:\\Users\\vizlab_stud\\Documents\\pythonProjects\\eye-movement-classification')
+path_root = Path(__file__).parents[2]
+sys.path.append(str(path_root))
 
-from models.cleandup.encoderClassifer import Encoder_classifier
-from models.simClrLoss import SimCLR_Loss
+from models.finalImplementations.encoderClassifer import Encoder_classifier
+from models.pre_tests.simClrLoss import SimCLR_Loss
 from util.testingUtils.checkpointsLogging import CheckpointUtil
-from util.dataset_loader import OpenEDSLoader
+from util.dataUtils.dataset_loader import OpenEDSLoader
 from util.layerFactory import LayerFactory
 
 from util.plot_tsne import PlotUtil
-from util.transformations import *
+from util.dataUtils.transformations import *
 
 warnings.simplefilter("ignore", UserWarning)
 
@@ -29,7 +44,7 @@ save_path = 'data/openEDS/openEDS.npy'
 batch_size = 8
 log_interval = 2
 lr = 0.00001
-n_epochs = 1
+n_epochs = 10
 steps = 0
 max_batches = 0  # all if 0
 lossfunction = SimCLR_Loss(batch_size, 0.5)

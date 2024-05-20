@@ -2,15 +2,6 @@ import sys
 
 import cv2
 import numpy as np
-sys.path.append('C:\\Users\\birkn\\Documents\\bachlor\\eye-movement-classification')
-
-from util.dataset_loader import OpenEDSLoader
-from util.transformations import Crop_top, Crop
-
-transformations = [
-    Crop_top(20),  # centers the image better
-    Crop((256, 256)),
-]
 
 
 class PupileAlg:
@@ -61,6 +52,16 @@ class PupileAlg:
 
 
 def test():
+    sys.path.append('C:\\Users\\birkn\\Documents\\bachlor\\eye-movement-classification')
+
+    from util.dataUtils.dataset_loader import OpenEDSLoader
+    from util.dataUtils.transformations import Crop_top, Crop
+
+    transformations = [
+        Crop_top(20),  # centers the image better
+        Crop((256, 256)),
+    ]
+
     relative_path = "" #'../../'
     root = relative_path + 'data/openEDS/openEDS'
     save_path = relative_path + 'data/openEDS/openEDSSplit.npy'

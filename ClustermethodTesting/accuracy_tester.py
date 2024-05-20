@@ -5,9 +5,9 @@ import numpy as np
 from torch import nn
 import torch
 
-from models.pretraindClassifier import PretrainedClassifier
-from models.simpleCnn import SimpleCnn
-from util.data import data_generator
+from models.pre_tests.pretraindClassifier import PretrainedClassifier
+from models.pre_tests.simpleCnn import SimpleCnn
+from util.dataUtils.data import data_generator
 
 
 device = "cpu"

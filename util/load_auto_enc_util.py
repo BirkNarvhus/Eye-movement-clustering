@@ -2,7 +2,7 @@ import torch
 import sys
 sys.path.append('C:\\Users\\vizlab_stud\\Documents\\pythonProjects\\eye-movement-classification')
 
-from models.cleandup.EncoderDecoder import EncoderDecoder
+from models.finalImplementations.EncoderDecoder import EncoderDecoder
 from util.layerFactory import LayerFactory
 
 
