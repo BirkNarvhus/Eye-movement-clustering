@@ -223,7 +223,9 @@ class EncoderDecoder(nn.Module):
 
 
 def test():
-
+    """
+    For testing different auto-encoder architectures
+    """
 
     '''
     encoder_output = torch.rand((8, 2, 60, 7, 7))
