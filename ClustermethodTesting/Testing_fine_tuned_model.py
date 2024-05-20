@@ -1,3 +1,14 @@
+"""
+Usage:
+    python ./Testing_fine_tuned_model.py <checkpoint_path>
+Description:
+    Trains a fine tuned downstream model on the provided encoder
+    disables training for encoder
+    checkpoint has to be an autoencoder model
+"""
+import os
+import sys
+
 import torch
 
 from models.pre_tests.autoEncoder import AutoEncoder
@@ -15,6 +26,14 @@ if torch.cuda.is_available():
 
 
 def test(model, test_loader, loss_function, device, epoch):
+    """
+    Test the model on the test loader
+    :param model: the model
+    :param test_loader: the test loader
+    :param loss_function: the loss function
+    :param device: the device
+    :param epoch: the epoch
+    """
     model.eval()
     with torch.no_grad():
         test_loss = 0
@@ -33,6 +52,16 @@ def test(model, test_loader, loss_function, device, epoch):
 
 
 def train(model, train_loader, optimizer, loss_function, device, log_interval, epoch):
+    """
+    Train the finetuner model on the train loader
+    :param model: the model
+    :param train_loader: the train loader
+    :param optimizer: the optimizer
+    :param loss_function: the loss function
+    :param device: the device
+    :param log_interval: the log interval
+    :param epoch: the epoch
+    """
     model.train()
     train_loss = 0
     for batch_idx, (x, y) in enumerate(train_loader):
@@ -54,8 +83,23 @@ def train(model, train_loader, optimizer, loss_function, device, log_interval, e
 
 
 def main():
+    """
+    Main function for parsing model file
+    and running traing + testing
+    """
+
+    if len(sys.argv) < 2:
+        print("Usage: python Testing_fine_tuned_model.py <checkpoint_path>")
+        sys.exit(1)
+
+    model_file = sys.argv[1]
+
+    if not os.path.exists(model_file):
+        print("The file does not exist")
+        sys.exit(1)
+
     autoEncoder = AutoEncoder(1, 3, 1).to(device=device)
-    autoEncoder.load_state_dict(torch.load("../content/saved_models/auto_encoder.pth"))
+    autoEncoder.load_state_dict(torch.load(model_file))
     dsmodel = finetuned_encoder_classifier(autoEncoder.encoder, 3, 10).to(device=device)
 
     train_loader, test_loader = data_generator(root, 128, clr=False, shuffle=True)

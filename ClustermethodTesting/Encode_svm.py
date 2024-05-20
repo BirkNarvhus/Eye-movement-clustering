@@ -1,3 +1,15 @@
+"""
+Usage:
+    python ./Encode_svm.py <checkpoint_path> <optional: model_type>
+Description:
+    Gets the encoder from the checkpoint and trains a svm model on the encoded data
+    Uses targets from the data loader to train the svm model
+    Model_type can be autoencoder or simclr
+
+"""
+import os
+import sys
+
 import numpy as np
 import torch
 from tqdm import tqdm
@@ -18,16 +30,16 @@ device = "cpu"
 if torch.cuda.is_available():
     device = "cuda:0"
 
-def main():
-    auto_encoder = AutoEncoder(1, 3, 1)
-    auto_encoder.load_state_dict(torch.load("../content/saved_models/auto_encoder.pth"))
-    encoder = auto_encoder.encoder
 
-    encoder = SimpleCnn(1, 64)
-    encoder.load_state_dict(torch.load("../content/saved_models/simclr_model_100.pth")['model_state_dict'])
-    encoder.eval()
-    train_loader, test_loader = data_generator(root, batch_size, clr=False, shuffle=True)
-
+def train_svm(encoder, train_loader, test_loader, num_feats, batch_size):
+    """
+    Trains a svm model on the encoded data
+    :param encoder: the encoder model
+    :param train_loader: the train loader
+    :param test_loader: the test loader
+    :param num_feats: number of features
+    :param batch_size: batch size
+    """
     feats = np.array([]).reshape((0, num_feats))
     targets = np.array([]).reshape((0, 1))
     encoder.eval()
@@ -65,7 +77,39 @@ def main():
 
     preds = pd.Series(preds, name="Label")
 
-    print("Validation accuracy for svm model: " + str((preds == targets.squeeze()).sum()/len(targets.squeeze())))
+    print("Validation accuracy for svm model: " + str((preds == targets.squeeze()).sum() / len(targets.squeeze())))
+
+
+def main():
+    """
+    Main function for parsing model file and mode
+    """
+
+    if len(sys.argv) < 2:
+        print("Usage: python test_model.py <model_file> <optional: mode>")
+        sys.exit(1)
+
+    model_file = sys.argv[1]
+
+    if not os.path.exists(model_file):
+        print("The file does not exist")
+        sys.exit(1)
+    model_type = "simclr"
+    if len(sys.argv) == 3:
+        model_type = sys.argv[2]
+
+    if model_type == "autoencoder":
+        auto_encoder = AutoEncoder(1, 3, 1)
+        auto_encoder.load_state_dict(torch.load("../content/saved_models/auto_encoder.pth"))
+        encoder = auto_encoder.encoder
+    else:
+        encoder = SimpleCnn(1, 64)
+        encoder.load_state_dict(torch.load("../content/saved_models/simclr_model_100.pth")['model_state_dict'])
+
+    encoder.eval()
+    train_loader, test_loader = data_generator(root, batch_size, clr=False, shuffle=True)
+
+    train_svm(encoder, train_loader, test_loader, num_feats, batch_size)
 
 
 if __name__ == '__main__':

@@ -1,3 +1,12 @@
+"""
+Usage:
+    python ./mnist_cnn_clr.py
+
+Description:
+    Trains a simple cnn model with SimCLR loss on mnist data
+    Used plotutil to plot the encoded data
+"""
+
 import os
 
 from util.dataUtils.data import data_generator
@@ -29,6 +38,10 @@ lossfunction = SimCLR_Loss(batch_size, 0.5)
 
 
 def test():
+    """
+    Runt test on model using the test loader
+    :return: the test loss
+    """
     model.eval()
     test_loss = 0
     with torch.no_grad():
@@ -55,7 +68,14 @@ def test():
         return test_loss
 
 
-def plot_features(model, num_classes, num_feats, batch_size):
+def plot_features(model, num_feats, batch_size):
+    """
+    Uses the model to generate encoded features and plots them
+    Uses PlotUtil to plot the data
+    :param model: the model
+    :param num_feats: number of classes for kmeans
+    :param batch_size: batch size
+    """
     preds = np.array([]).reshape((0, 1))
     gt = np.array([]).reshape((0, 1))
     feats = np.array([]).reshape((0, num_feats))
@@ -74,13 +94,17 @@ def plot_features(model, num_classes, num_feats, batch_size):
             target = target.cpu().data.numpy().reshape((-1, 1))
             targets = np.append(targets, target, axis=0)
     plt_util = PlotUtil(feats, "test", "t-SNE")
-    plt_util.plot_tsne()
-
-
-
+    plt_util.plot_dim_reduced(targets=targets.squeeze())
 
 
 def save_model(model, optimizer, current_epoch, name):
+    """
+    Saves the model and optimizer state dict
+    :param model: the model
+    :param optimizer: the optimizer
+    :param current_epoch: the current epoch
+    :param name: the name of the model
+    """
     out = os.path.join('../content/saved_models/', name.format(current_epoch))
 
     torch.save({'model_state_dict': model.state_dict(),
@@ -88,6 +112,9 @@ def save_model(model, optimizer, current_epoch, name):
 
 
 if __name__ == '__main__':
+    """
+    script for running the training and testing of the model
+    """
     train_loader, test_loader = data_generator(root, batch_size, clr=True)
 
     model = SimpleCnn(input_size, num_feats)
@@ -98,7 +125,6 @@ if __name__ == '__main__':
         lr=0.2,
         weight_decay=1e-6,
     )
-
 
     loss_fn = lossfunction
 
@@ -140,6 +166,6 @@ if __name__ == '__main__':
     pytorch_total_params = sum(p.numel() for p in model.parameters())
     print('Number of params: {}'.format(pytorch_total_params))
     save_model(model, optimizer, n_epochs, 'simclr_model_{}.pth')
-    plot_features(model, 10, num_feats, batch_size)
+    plot_features(model, num_feats, batch_size)
 
 

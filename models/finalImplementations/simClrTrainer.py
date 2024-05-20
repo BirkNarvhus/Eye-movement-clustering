@@ -143,7 +143,7 @@ def plot_features(model, num_feats, batch_size, loader, name="test"):
         with open(output_dir + '{}-feats.npy'.format(model_name), 'wb') as f:
             np.save(f, feats)
     plt_util = PlotUtil(feats, name, mode="PCA", root=output_dir)
-    plt_util.plot_tsne()
+    plt_util.plot_dim_reduced()
 
 
 if __name__ == '__main__':

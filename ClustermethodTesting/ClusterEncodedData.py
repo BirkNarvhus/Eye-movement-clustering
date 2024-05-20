@@ -1,3 +1,14 @@
+"""
+Usage:
+    python ./ClusterEncodedData.py <checkpoint_path>
+
+Description:
+    Test the model and cluster the encoded data
+    The labels decide with color on the plot
+"""
+import os
+import sys
+
 import numpy as np
 import scipy
 import torch
@@ -18,6 +29,18 @@ if torch.cuda.is_available():
 
 
 def plot_features(model, num_classes, num_feats, batch_size, test_loader):
+    """
+    Uses the model to generate encoded features and plots them
+    Runs on provided dataloader
+    Uses PlotUtil to plot the data
+    and kmeans after in plotutil
+
+    :param model: the model
+    :param num_classes: number of classes
+    :param num_feats: number of classes for kmeans
+    :param batch_size: batch size
+    :param test_loader: test loader
+    """
     feats = np.array([]).reshape((0, num_feats))
     targets = np.array([]).reshape((0, 1))
     model.eval()
@@ -34,21 +57,29 @@ def plot_features(model, num_classes, num_feats, batch_size, test_loader):
             target = target.cpu().data.numpy().reshape((-1, 1))
             targets = np.append(targets, target, axis=0)
             feats = np.append(feats, out, axis=0)
-    print("Eval done starting t-SNE")
 
-    plt_util = PlotUtil(feats, "test encoder", mode="pcak", show=True, dims=2, kmeans_after=True)
-    plt_util.plot_tsne(targets=targets.squeeze())
-
-    preds = plt_util.downstream(feats)
-
-    print(scipy.stats.ks_2samp(preds, targets.squeeze(), alternative='two-sided', mode='auto'))
-
+    plt_util = PlotUtil(feats, "test encoder", mode="pcak", show=True, dims=2, kmeans_after=True, kmeans_classes=num_classes)
+    plt_util.plot_dim_reduced(targets=targets.squeeze())
 
 def main():
-    model = AutoEncoder(1, 3, 1, turn_off_decoder=True).to(device=device)
-    model.load_state_dict(torch.load("../content/saved_models/auto_encoder.pth"))
-    #model = SimpleCnn(1, 64)
-    #model.load_state_dict(torch.load("../content/saved_models/simclr_model_100.pth")['model_state_dict'])
+    """
+    Function for retrieving sys args and running plot method
+    """
+
+    if len(sys.argv) < 2:
+        print("Usage: python ClusterEncodedData.py <checkpoint_path>")
+        sys.exit(1)
+
+    model_file = sys.argv[1]
+
+    if not os.path.exists(model_file):
+        print("The file does not exist")
+        sys.exit(1)
+
+    model = AutoEncoder(1, 3, 1).to(device=device)
+    model.load_state_dict(torch.load(model_file))
+
+    # better method of loading encoder. Dose not work the same if the models uses bottlneck
     model = model.encoder
     model.eval()
 

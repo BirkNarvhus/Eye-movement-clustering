@@ -21,7 +21,7 @@ class PlotUtil:
     Class to reduce the dimension of the data and plot it
     Can do a lot of different dim reductions and generate different plots depending on params
     """
-    def __init__(self, data, title, mode="tsne", root="", show=False, dims=2, kmeans_after=False):
+    def __init__(self, data, title, mode="tsne", root="", show=False, dims=2, kmeans_after=False, kmeans_classes=3):
         """
         Reduces the dimension of the data and plots it
         can do kmeans after the dim reduction and plot the centers
@@ -64,8 +64,9 @@ class PlotUtil:
         self.show = show
         self.kmeans_after = kmeans_after
         self.kmeans = None
+        self.kmeans_dims = kmeans_classes
 
-    def plot_tsne(self, with_centers=False, targets=None, targets_reg_alg=None):
+    def plot_dim_reduced(self, with_centers=False, targets=None, targets_reg_alg=None):
         """
         Plot the data after dim reduction
         can do kmeans after the dim reduction and plot the centers
@@ -94,7 +95,7 @@ class PlotUtil:
         # If kmeans after is True, run kmeans and plot the centers
         if self.kmeans_after:
             print("Running kmeans after")
-            self.kmeans = KMeansDownstream(3)
+            self.kmeans = KMeansDownstream(self.kmeans_dims)
             self.kmeans.fit(X_2d)
             centers_ = self.kmeans.get_cluster_centers()
             targets = self.kmeans.get_labels()
@@ -191,7 +192,7 @@ class PlotUtil:
         """
         self.num_centers = len(centers)
         self.data = np.concatenate((self.data, centers), axis=0)
-        self.plot_tsne(with_centers=True)
+        self.plot_dim_reduced(with_centers=True)
         plt.title(self.title)
 
     def downstream(self, data):

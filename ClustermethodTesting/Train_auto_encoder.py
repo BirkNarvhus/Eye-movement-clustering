@@ -1,3 +1,10 @@
+"""
+Usage:
+    python ./Train_auto_encoder.py
+
+Description:
+    Trains an autoencoder model on the mnist dataset
+"""
 import torch
 from torch import nn
 
@@ -20,6 +27,16 @@ log_interval = 5
 
 
 def train(model, train_loader, optimizer, loss_function, device, log_interval, epoch):
+    """
+    Train the model on the train loader
+    :param model:  the model
+    :param train_loader:  the train loader
+    :param optimizer:  the optimizer
+    :param loss_function:  the loss function
+    :param device:  the device
+    :param log_interval:  the log interval
+    :param epoch:  the epoch
+    """
     model.train()
     train_loss = 0
     for batch_idx, (x, y) in enumerate(train_loader):
@@ -41,6 +58,9 @@ def train(model, train_loader, optimizer, loss_function, device, log_interval, e
 
 
 def main():
+    """
+    Main function for training the model
+    """
     train_loader, test_loader = data_generator(root, batch_size, clr=False)
 
     model = AutoEncoder(input_channels, 3, 1)

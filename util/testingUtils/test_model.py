@@ -153,7 +153,7 @@ def do_kmeans(model, data_loader):
         print("Running KMeans on the encoded data...")
         pUtil = PlotUtil(output_buffer, "KMeans Downstream Auto enc", mode="mds", root=Out_folder, show=True, dims=2,
                  kmeans_after=True)
-        pUtil.plot_tsne(targets_reg_alg=target_buffer)
+        pUtil.plot_dim_reduced(targets_reg_alg=target_buffer)
 
 
 def do_svm(model, data_loader):
@@ -192,7 +192,7 @@ def do_svm(model, data_loader):
         targets = supportvector.predict(output_buffer)
         pUtil = PlotUtil(output_buffer, "SVM downstream", mode="kpca", root=Out_folder, show=True, dims=2,
                          kmeans_after=False)
-        pUtil.plot_tsne(targets=targets, targets_reg_alg=target_buffer)
+        pUtil.plot_dim_reduced(targets=targets, targets_reg_alg=target_buffer)
 
 
 def main():

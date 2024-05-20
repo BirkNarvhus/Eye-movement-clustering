@@ -1,4 +1,13 @@
+"""
+Usage:
+    python ./simClrTrainer.py <checkpoint_path>
+Description:
+    Test acc of the model from the checkpoint
+"""
+
+
 import os
+import sys
 import time
 
 import numpy as np
@@ -24,21 +33,12 @@ num_cl = 10
 batch_size = 128
 root = '../data/mnist'
 
-modelname = "simclr_model_3.pth"
-
-dsmodel = SimpleCnn(1, 64)
-dsmodel.load_state_dict(torch.load("../content/saved_models/" + modelname)["model_state_dict"])
-dsmodel = finetuned_encoder_classifier(dsmodel, 64, 10)
-dsmodel.eval()
-
-dsoptimizer = torch.optim.SGD([params for params in dsmodel.parameters() if params.requires_grad],lr = 0.01, momentum = 0.9)
-
-lr_scheduler = torch.optim.lr_scheduler.StepLR(dsoptimizer, step_size=1, gamma=0.98, last_epoch=-1)
-
-loss_fn = nn.CrossEntropyLoss()
-
 
 def main():
+    """
+    Function for testing and training the model
+
+    """
     global min_val_loss
     train_loader, test_loader = data_generator(root, batch_size, clr=False)
 
@@ -133,4 +133,24 @@ def main():
 
 
 if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        print("Usage: python accuracy_tester.py <checkpoint_path>")
+        sys.exit(1)
+
+    modelname = sys.argv[1]
+    if not os.path.exists(modelname):
+        print("The file does not exist")
+        sys.exit(1)
+
+    dsmodel = SimpleCnn(1, 64)
+    dsmodel.load_state_dict(torch.load(modelname)["model_state_dict"])
+    dsmodel = finetuned_encoder_classifier(dsmodel, 64, 10)
+    dsmodel.eval()
+
+    dsoptimizer = torch.optim.SGD([params for params in dsmodel.parameters() if params.requires_grad], lr=0.01,
+                                  momentum=0.9)
+
+    lr_scheduler = torch.optim.lr_scheduler.StepLR(dsoptimizer, step_size=1, gamma=0.98, last_epoch=-1)
+
+    loss_fn = nn.CrossEntropyLoss()
     main()
