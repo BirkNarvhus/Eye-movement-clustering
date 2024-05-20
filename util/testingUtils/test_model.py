@@ -50,7 +50,7 @@ def load_model(model_file, legacy=False, remove_decoder=False):
 
     model = EncoderDecoder(layers_enc, layers_dec, 400, 400,
                            dil_factors=(1, 2, 2), lin_bottleneck=True, lin_bottleneck_layers=3,
-                           lin_bottleneck_channels=(400*8*8, 2000, 4096), stream_buffer=False)
+                           lin_bottleneck_channels=(400 * 8 * 8, 2000, 64 * 8 * 8), stream_buffer=False)
 
     optimizer = torch.optim.Adam(
         [params for params in model.parameters() if params.requires_grad],
