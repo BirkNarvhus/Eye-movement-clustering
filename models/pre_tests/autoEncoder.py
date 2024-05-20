@@ -1,9 +1,23 @@
+"""
+2d autoencoder model
+Used in the first test iterations of the models.
+"""
+
 import torch
 from torch import nn
 
 
 class Encoder(nn.Module):
+    """
+    Encoder class for the autoencoder model.
+    Simple network architecture with 3 convolutional layers.
+    one linear layer to the output.
+    """
     def __init__(self, input_channels, output_channels):
+        """
+        :param input_channels: Number of input channels.
+        :param output_channels: Number of output channels.
+        """
         super(Encoder, self).__init__()
         self.conv1 = nn.Conv2d(input_channels, 32, kernel_size=3, stride=1, padding=0)
         self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=0)
@@ -23,7 +37,16 @@ class Encoder(nn.Module):
 
 
 class Decoder(nn.Module):
+    """
+    Decoder class for the autoencoder model.
+    Simple network architecture with transposed convolution
+    and 2d convolution
+    """
     def __init__(self, input_channels, output_channels):
+        """
+        :param input_channels: Number of input channels.
+        :param output_channels: Number of output channels.
+        """
         super(Decoder, self).__init__()
         self.input = input_channels
         self.conv1 = nn.ConvTranspose2d(input_channels, 32, kernel_size=3, stride=2, padding=1, output_padding=1)
@@ -45,7 +68,19 @@ class Decoder(nn.Module):
 
 
 class AutoEncoder(nn.Module):
+    """
+    AutoEncoder class for the autoencoder model.
+    Combines the Encoder and Decoder classes.
+    Uses a suboptimal way to turn off the decoder.
+    This is done by to simplify loading the old models.
+    """
     def __init__(self, input_channels, hidden_channels, output_channels, turn_off_decoder=False):
+        """
+        :param input_channels: Number of input channels.
+        :param hidden_channels: Number of hidden channels.
+        :param output_channels: Number of output channels.
+        :param turn_off_decoder: If True, the decoder is turned off.
+        """
         super(AutoEncoder, self).__init__()
         self.encoder = Encoder(input_channels, hidden_channels)
         self.decoder = Decoder(hidden_channels, output_channels)
@@ -59,6 +94,9 @@ class AutoEncoder(nn.Module):
 
 
 def test():
+    """
+    Test the model
+    """
     model = Encoder(1, 1)
     x = torch.randn(64, 1, 28, 28)
     y = model(x)

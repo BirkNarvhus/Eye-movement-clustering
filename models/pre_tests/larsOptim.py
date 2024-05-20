@@ -1,3 +1,15 @@
+"""
+LARS optimizer implementation for PyTorch.
+used in sim clr
+
+DISCLAIMER: This code is not mine, it was taken from the following article:
+https://medium.com/the-owl/simclr-in-pytorch-5f290cb11dd7
+witch got it from the following repository:
+https://github.com/Spijkervet/SimCLR
+but is also similar to the implementation in the following repository:
+https://github.com/google-research/simclr
+"""
+
 from torch.optim.optimizer import Optimizer, required
 import torch
 import re
@@ -97,20 +109,13 @@ class LARS(Optimizer):
                 grad = p.grad.data
 
                 param_state = self.state[p]
-
-                # TODO: get param names
-                # if self._use_weight_decay(param_name):
                 grad += self.weight_decay * param
 
                 if self.classic_momentum:
-                    trust_ratio = 1.0
 
-                    # TODO: get param names
-                    # if self._do_layer_adaptation(param_name):
                     w_norm = torch.norm(param)
                     g_norm = torch.norm(grad)
 
-                    #device = g_norm.get_device()
                     trust_ratio = torch.where(
                         w_norm.gt(0),
                         torch.where(

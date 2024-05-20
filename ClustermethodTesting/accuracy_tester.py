@@ -4,8 +4,7 @@ import time
 import numpy as np
 from torch import nn
 import torch
-
-from models.pre_tests.pretraindClassifier import PretrainedClassifier
+from models.pre_tests.Pretrained_classifier import finetuned_encoder_classifier
 from models.pre_tests.simpleCnn import SimpleCnn
 from util.dataUtils.data import data_generator
 
@@ -29,7 +28,7 @@ modelname = "simclr_model_3.pth"
 
 dsmodel = SimpleCnn(1, 64)
 dsmodel.load_state_dict(torch.load("../content/saved_models/" + modelname)["model_state_dict"])
-dsmodel = PretrainedClassifier(dsmodel, 64, 10)
+dsmodel = finetuned_encoder_classifier(dsmodel, 64, 10)
 dsmodel.eval()
 
 dsoptimizer = torch.optim.SGD([params for params in dsmodel.parameters() if params.requires_grad],lr = 0.01, momentum = 0.9)

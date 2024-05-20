@@ -1,6 +1,15 @@
+"""
+SimCLR Loss
+DISCLAIMER: This code is not mine, it was taken from the following article:
+https://medium.com/the-owl/simclr-in-pytorch-5f290cb11dd7
+witch got it from the following repository:
+https://github.com/Spijkervet/SimCLR
+"""
+
 import torch.nn as nn
 import torch
 import numpy as np
+
 
 class SimCLR_Loss(nn.Module):
     def __init__(self, batch_size, temperature):

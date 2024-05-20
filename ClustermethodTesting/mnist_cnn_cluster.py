@@ -1,9 +1,9 @@
 import os
 
-from models.pre_tests.larsOptim import LARS
 from util.dataUtils.data import data_generator
 import numpy as np
 import torch
+from torch.optim import Adam
 from models.pre_tests.simpleCnn import SimpleCnn
 from models.pre_tests.simClrLoss import SimCLR_Loss
 
@@ -93,11 +93,10 @@ if __name__ == '__main__':
     model = SimpleCnn(input_size, num_feats)
     model.to(device)
 
-    optimizer = LARS(
+    optimizer = Adam(
         [params for params in model.parameters() if params.requires_grad],
         lr=0.2,
         weight_decay=1e-6,
-        exclude_from_weight_decay=["batch_normalization", "bias"],
     )
 
 

@@ -1,9 +1,18 @@
-import numpy
+"""
+Early implementation for auto encoder for 3d data.
+This implementation is Deprecated.
+Used models.finalImplementations.EncoderDecoder instead.
+"""
+
 import numpy as np
 import torch
 from torch import nn
 
+
 class Cumulativ_global_pooling(nn.Module):
+    """
+    This class is used to apply a global pooling on the input tensor.
+    """
     def __init__(self):
         super(Cumulativ_global_pooling, self).__init__()
 
@@ -12,6 +21,9 @@ class Cumulativ_global_pooling(nn.Module):
 
 
 class Chomp1d(nn.Module):
+    """
+    This class is used to remove the padding from the temporal convolution.
+    """
     def __init__(self, chomp_size):
         super(Chomp1d, self).__init__()
         self.chomp_size = chomp_size
@@ -21,8 +33,24 @@ class Chomp1d(nn.Module):
 
 
 class Blocks3d(nn.Module):
+    """
+    This class is used to apply a 3d convolution on the input tensor.
+    If two_plus_1 is True, then apply 2+1D convolution.
+    Uses 3d transposed convolution for upsampling if upsampling is True.
+    """
     def __init__(self, input_channels, output_channels, kernel_size=(3, 3, 3), special_stride=1, temp_stride=1,
                  dilation_size=1, two_plus_1=True, upsamplign=False):
+        """
+
+        :param input_channels: Number of input channels.
+        :param output_channels: Number of output channels.
+        :param kernel_size: Size of the kernel.
+        :param special_stride: Stride of the convolution in the special dimension.
+        :param temp_stride: Stride of the convolution in the temporal dimension.
+        :param dilation_size: Dilation of the convolution.
+        :param two_plus_1: If True, apply 2+1D convolution.
+        :param upsamplign: If True, apply 3d transposed convolution.
+        """
         super(Blocks3d, self).__init__()
         padding_to_chomp = (kernel_size[0] - 1) * dilation_size
         self.chomp = Chomp1d(padding_to_chomp)
@@ -63,6 +91,11 @@ class Blocks3d(nn.Module):
 
 
 class Residual_Block3d(nn.Module):
+    """
+    This class is used to apply a residual block on the input tensor.
+    uses Blocks3d and BatchNorm3d.
+    uses leaky relu as activation function.
+    """
     def __init__(self, input_channels, output_channels, kernel_size=(3, 3, 3), special_down_sample=1, temp_stride=1,
                  dilation_size=1, num_blocks=1, upsamplign=False):
         super(Residual_Block3d, self).__init__()
@@ -104,15 +137,19 @@ class Residual_Block3d(nn.Module):
 
 
 class Encoder(nn.Module):
+    """
+    Encoder class for the autoencoder model.
+    Does not include bottleneck layer.
+
+    """
     def __init__(self, input_channels,
                  layers=((16, 32, 2, 1, 1, 5), (32, 64, 2, 1, 5), (64, 64, 1, 1, 1, 5)), global_pooling=True):
-        '''
-
-        :param input_channels:
-        :param output_channels:
+        """
+        :param input_channels: Number of input channels.
+        :param output_channels: Number of output channels.
         :param layers: list of tuples, each tuple is a layer with the following format: (input_channels, output_channels,
         special_down_sample, temp_stride, dilation, num_3d_conv_blocks)
-        '''
+        """
         super(Encoder, self).__init__()
 
         if len(layers) <= 0:
@@ -136,9 +173,16 @@ class Encoder(nn.Module):
 
 
 class Decoder(nn.Module):
+    """
+    Decoder class for the autoencoder model.
+    """
 
     def __init__(self,
                  layers=((64, 64, 1, 1, 1, 5), (32, 64, 2, 1, 5), (16, 32, 2, 1, 1, 5))):
+        """
+        :param layers: list of tuples, each tuple is a layer with the following format: (input_channels, output_channels,
+        special_down_sample, temp_stride, dilation, num_3d_conv_blocks)
+        """
         super(Decoder, self).__init__()
 
         if len(layers) <= 0:
@@ -163,8 +207,20 @@ class Decoder(nn.Module):
 
 
 class AutoEncoder(nn.Module):
+    """
+    AutoEncoder class for the autoencoder model.
+    Does not use streambuffer
+    No bottleneck layers
+    """
     def __init__(self,
                  layers=((16, 32, 2, 1, 1, 5), (32, 64, 2, 1, 1, 5), (64, 64, 1, 1, 1, 5)), layers_decode=None):
+        """
+        uses revers layers in decoder if layers_decode is None
+        :param layers: list of tuples, each tuple is a layer with the following format: (input_channels, output_channels,
+        special_down_sample, temp_stride, dilation, num_3d_conv_blocks)
+        :param layers_decode: list of tuples, each tuple is a layer with the following format: (input_channels, output_channels,
+        special_down_sample, temp_stride, dilation, num_3d_conv_blocks)
+        """
         super(AutoEncoder, self).__init__()
         self.encoder = Encoder(1, layers, global_pooling=False)
         reversed_layers = [(layer[1], layer[0], *layer[2:]) for layer in layers[::-1]] if layers_decode is None else layers_decode
@@ -179,6 +235,11 @@ class AutoEncoder(nn.Module):
 
 
 def get_n_params(model):
+    """
+    Get the number of parameters in the model
+    :param model: the model
+    :return: the number of parameters
+    """
     param_size = 0
     for param in model.parameters():
         param_size += param.nelement() * param.element_size()
@@ -192,6 +253,9 @@ def get_n_params(model):
 
 
 def test():
+    """
+    test function of the blocks
+    """
     layers = ((16, 32, 2, 1, 1, 5), (32, 64, 1, 1, 1, 5), (64, 64, 1, 1, 1, 5))
 
     model = Blocks3d(1, 1)
@@ -222,19 +286,23 @@ def test():
     print('number of params: {}'.format(get_n_params(model)))
 
 
-def test_encoder():
+def test_auto_encoder():
+    """
+    test function of the auto encoder
+    """
 
     layers = ((16, 32, 2, 1, 1, 5), (32, 32, 2, 1, 1, 5), (32, 32, 2, 1, 1, 5), (32, 64, 1, 1, 1, 3))
     layers2 = ((64, 64, 2, 4, 1, 3), (64, 32, 2, 4, 1, 3),  (32, 16, 2, 4, 1, 3), (16, 8, 2, 2, 1, 3))
 
     model = AutoEncoder(layers=layers, layers_decode=layers2)
-    #x = torch.randn(1, 1, 120, 400, 600)
-    #y = model(x)
-    #print(x.shape)
-    #print(y.shape)
+    x = torch.randn(1, 1, 120, 400, 600)
+    y = model(x)
+    print(x.shape)
+    print(y.shape)
 
-    #print('number of params: {}'.format(get_n_params(model)))
+    print('number of params: {}'.format(get_n_params(model)))
 
 
 if __name__ == '__main__':
-    test_encoder()
+    test_auto_encoder()
+    test()

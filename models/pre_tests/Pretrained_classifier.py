@@ -1,3 +1,8 @@
+"""
+This file contains the code for the finetuned_encoder_classifier model.
+Uses the Encoder class and adds a classifier on top of it.
+Turns of the gradients for the encoder. To do transfer learning.
+"""
 import torch
 from torch import nn
 
@@ -5,7 +10,15 @@ from models.pre_tests.autoEncoder import Encoder
 
 
 class finetuned_encoder_classifier(nn.Module):
+    """
+    This class is used to create a finetuned encoder classifier model.
+    """
     def __init__(self, encoder, encoder_out, classes):
+        """
+        :param encoder: The encoder model.
+        :param encoder_out: The output of the encoder.
+        :param classes: Number of classes.
+        """
         super(finetuned_encoder_classifier, self).__init__()
         self.encoder = encoder
 
@@ -25,6 +38,9 @@ class finetuned_encoder_classifier(nn.Module):
 
 
 def test():
+    """
+    Test the model
+    """
     encoder = Encoder(1, 1)
     model = finetuned_encoder_classifier(encoder, 1*7*7, 10)
     x = torch.randn(64, 1, 28, 28)
