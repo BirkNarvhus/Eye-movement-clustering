@@ -1,8 +1,11 @@
 # Eye movement classification 
 
-Dette repositoryet inneholder kode for å klassifisere øyebevegelser. 
+### **NB:** Det er bare Birk Øvstetun Narvhus som har jobbet på prosjektet, men ettersom deling av maskin på labb, er det opplastninger fra flere brukere.
 
-Dette innebærer også en rekke tester for å evaluere modellene.
+Dette repositoryet inneholder kode for å klassifisere øyebevegelser.
+Dette innebærer også en rekke tester for å evaluere modellene. Modellene i modell 3-5 er trent på OpenEDS datasettet, 
+mens modellene i ClustermetoderTesting er trent på MNIST datasettet. OpenEDS datasettet er ikke inkludert i dette repositoryet.
+Datasettet må lastes ned manuelt og legges i **data** mappen. Alle 3D modell scripts burde kjøres på Nvidia RTX 4090.
 
 
 ## Nødvendige biblioteker
@@ -71,6 +74,7 @@ Modulene ble ikke brukt i endelig implementasjon.
 ## Trening av modeller
 Parameter configurasjoner ligger i **configs/modelConfig.yaml**. Config filen inneholder parametere for modell 5.
  **modelConfig_model4.yaml** inneholder configs for model 4. Hvis man skal trene model 4, må man rename filen til **modelConfig.yaml**.
+Modell arkitekturer er lagert i **content/arc** mappen.
 
 ### Bruk:
 
@@ -106,3 +110,7 @@ python ./util/testingUtils/test_model.py <model_file> <optional: mode>
     - **ivtUtils** - inneholder funksjoner for IVVT algoritmen og puppille uthening.
 - **configs** - inneholder konfigurasjonsfiler for modellene.
 - **ClustermethodTesting** - inneholder modeller og tester for iterasjon 1.
+- **content** - inneholder content fra modellene. 
+    - **arc** - inneholder arkitekturer for modellene.
+    - **saved_models** - inneholder lagrede modeller og checkpoints.
+    - **saved_outputs** - inneholder lagrede output fra modellene og tester.

@@ -42,3 +42,22 @@ class DiceCrossEntrepy(torch.nn.Module):
     def forward(self, x, y):
         x, y = torch.nn.functional.sigmoid(x), torch.nn.functional.sigmoid(y)
         return self.dice(x, y) + self.cross_entropy(x, y)
+
+
+class SmoothenGradiantWithHubertLoss(torch.nn.Module):
+    """
+    This class is used to calculate the Smoothen Gradiant with Hubert loss.
+    """
+
+    def __init__(self, loss, beta=0.1):
+        super(SmoothenGradiantWithHubertLoss, self).__init__()
+        self.loss = loss
+        self.beta = beta
+
+    def forward(self, x, y):
+        loss = self.loss(x, y)
+        x = x.view(-1)
+        y = y.view(-1)
+        diff = torch.abs(x - y)
+        loss = torch.mean(loss + self.beta * diff)
+        return loss

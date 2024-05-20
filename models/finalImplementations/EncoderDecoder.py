@@ -16,23 +16,18 @@ from util.layerFactory import LayerFactory
 from torchinfo import summary
 
 
-class SmoothenGradiantWithHubertLoss(nn.Module):
-    def __init__(self, loss, beta=0.1):
-        super(SmoothenGradiantWithHubertLoss, self).__init__()
-        self.loss = loss
-        self.beta = beta
-
-    def forward(self, x, y):
-        loss = self.loss(x, y)
-        x = x.view(-1)
-        y = y.view(-1)
-        diff = torch.abs(x - y)
-        loss = torch.mean(loss + self.beta * diff)
-        return loss
-
-
 class DilationBottleneck(nn.Module):
+    """
+    Dilation bottleneck class
+    """
     def __init__(self, dil_factors=(1, 2, 4, 8), kernel=(3, 3, 3), in_channels=1, out_channels=1):
+        """
+        Constructor for dilation bottleneck
+        :param dil_factors: List of dilation factors
+        :param kernel: List of  Kernel size
+        :param in_channels: Input feature size
+        :param out_channels: Output feature size
+        """
         super(DilationBottleneck, self).__init__()
         self.conv_layers = nn.ModuleList()
         for i, dil in enumerate(dil_factors):
@@ -57,7 +52,17 @@ class DilationBottleneck(nn.Module):
 
 
 class Linenar_bottleneck(nn.Module):
+    """
+    Linear bottleneck class
+    """
     def __init__(self, in_channels, hidden_channels, out_channels, layers=1):
+        """
+        Constructor for linear bottleneck
+        :param in_channels: Input feature size
+        :param hidden_channels: Hidden feature size
+        :param out_channels: Output feature size
+        :param layers: Number of layers
+        """
         super(Linenar_bottleneck, self).__init__()
         modlist = nn.ModuleList()
         if layers != 1:

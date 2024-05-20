@@ -139,6 +139,12 @@ print("running on ", device)
 
 
 def test(test_loader, model):
+    """
+    Test the model on the test_loader
+    :param test_loader: the test loader
+    :param model: the model
+    :return: the test loss
+    """
     model.eval()
     test_loss = 0
     with torch.no_grad():
@@ -161,6 +167,9 @@ def test(test_loader, model):
 
 
 def main():
+    """
+    Main function to train the model
+    """
     global model, optimizer, steps, n_epochs, checkpoint_dir, lossfunction, batch_size, log_interval, device
     if len(sys.argv) >= 2:
         load_file_path = sys.argv[1]
