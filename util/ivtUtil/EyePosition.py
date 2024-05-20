@@ -1,11 +1,24 @@
-import sys
+"""
+This file contains the class PupileAlg which is used to detect the pupile in a given image.
+This uses opencv to detect the pupile.
+The pupil detection is contrast based and is not perfect.
+The parameters are not optimally tuned.
+"""
 
 import cv2
 import numpy as np
 
 
 class PupileAlg:
+    """
+    This class is used to detect the pupile in a given image.
+    """
     def get_pupile(self, img):
+        """
+        Get the pupile in a given image.
+        :param img:  the image
+        :return:  the x, y and radius of the pupile
+        """
         img = np.array(img, dtype=np.uint8)
         inv = cv2.bitwise_not(img)
         kernel = np.ones((2, 2), np.uint8)
@@ -23,6 +36,11 @@ class PupileAlg:
         return x, y, radius
 
     def get_pupile_from_vid(self, seq):
+        """
+        Get the pupile from a video sequence.
+        :param seq:  the video sequence
+        :return:  list of x, y and radius of the pupile
+        """
         pos_buffer = []
         for i, img in enumerate(seq):
             x, y, radius = self.get_pupile(img)
@@ -36,6 +54,11 @@ class PupileAlg:
         return pos_buffer
 
     def get_pupile_from_batch(self, batch):
+        """
+        Get the pupile from a batch of videos.
+        :param batch:  the batch of videos
+        :return:  list of lists of x, y and radius of the pupile
+        """
         batch = np.array(batch)
         batch_buffer = []
         for vid in batch:
@@ -44,6 +67,13 @@ class PupileAlg:
         return batch_buffer
 
     def get_from_loader(self, loader, with_images=False):
+        """
+        Get the pupile from a loader.
+        Used if you want to use a loader and loop sequentially
+        :param loader: the loader
+        :param with_images: if True, return the images as well
+        :return: the pupile positions
+        """
         for batch in loader:
             if with_images:
                 yield batch, self.get_pupile_from_batch(batch)
@@ -52,8 +82,14 @@ class PupileAlg:
 
 
 def test():
-    sys.path.append('C:\\Users\\birkn\\Documents\\bachlor\\eye-movement-classification')
+    """
+    Test the pupile detection
+    """
 
+    import sys
+    from pathlib import Path
+    path_root = Path(__file__).parents[2]
+    sys.path.append(str(path_root))
     from util.dataUtils.dataset_loader import OpenEDSLoader
     from util.dataUtils.transformations import Crop_top, Crop
 
@@ -81,6 +117,7 @@ def test():
                 cv2.imshow("pupile", img_show)
                 cv2.waitKey(500)
         break
+
 
 if __name__ == '__main__':
     test()

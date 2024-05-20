@@ -1,14 +1,26 @@
+"""
+Implementation of the IVVt algorithm
+used when plotting results from the eye tracking data
+This is compared to results of other models in test_model.py
+"""
 import numpy as np
 
 import sys
-sys.path.append('C:\\Users\\birkn\\Documents\\bachlor\\eye-movement-classification')
+from pathlib import Path
+path_root = Path(__file__).parents[2]
+sys.path.append(str(path_root))
 
 from util.ivtUtil.EyePosition import PupileAlg
 
 
 class VelCalculator:
-    def __init__(self, delt_time):
+    """
+    Calculates the velocity of the eye movement
+    Uses pupil positions to calculate the velocity
+    """
+    def __init__(self, delt_time=6*1000/200):
         """
+        the delta time is set to 6*1000/200 because the video is 6 seconds long and 200 frames
         :param delt_time: delta time between each frame in ms
         """
         self.delta_time = delt_time
@@ -17,6 +29,12 @@ class VelCalculator:
         self.velocity = 0
 
     def calculate(self, pos, time):
+        """
+        Calculate the velocity of the eye movement
+        :param pos:  the position of the eye
+        :param time: the delta time of the position
+        :return: the velocity
+        """
         if pos is None or pos[0] is None or pos[1] is None:
             if self.velocity is not None:
                 return self.velocity
@@ -35,6 +53,11 @@ class VelCalculator:
         return self.velocity
 
     def calculate_video(self, positions):
+        """
+        Calculate the velocity of the eye movement in a video
+        :param positions: the positions of the eye
+        :return: the velocities
+        """
         buffer = []
         self.prev_time = 0
         self.prev_pos = (0, 0)
@@ -49,11 +72,23 @@ class VelCalculator:
         if len(buffer) == 0:
             buffer.append(None)
         return buffer
+
     def calculate_batch(self, bached_positions):
+        """
+        Calculate the velocity of the eye movement in a batch of videos
+        :param bached_positions:
+        :return: the velocities
+        """
         return [self.calculate_video(positions) for positions in bached_positions]
 
 
 class IvvtClassifier:
+    """
+    Classifies the velocity of the eye movement into 3 categories
+    0 - fixation
+    1 - sacade
+    2 - smoothper
+    """
     def __init__(self, sacadeThreshold=0.5, smoothperThreshold=0.2):
         self.sacadeThreshold = sacadeThreshold
         self.smoothperThreshold = smoothperThreshold
@@ -98,29 +133,65 @@ class IvvtClassifier:
             return 2
 
     def classify_batch(self, velocities):
+        """
+        Classify the velocities of a batch of videos
+        :param velocities:  the velocities
+        :return:  the classifications
+        """
         return [self.classify(vel) for vel in velocities]
 
 
 class IvvtHelper:
+    """
+    Helper class for the IVVt algorithm
+    combines the velocity calculator, the ivvt classifier and the pupile algorithm
+    """
     def __init__(self, delta_time=6*1000/200, sacadeThreshold=0.5, smoothperThreshold=0.2):
+        """
+        Setting threshold values and params for the IVVt algorithm
+        :param delta_time: the delta time between each frame in ms
+        :param sacadeThreshold: the threshold for sacade
+        :param smoothperThreshold: the threshold for smoothper
+        """
         self.delta_time = delta_time
         self.vel_calculator = VelCalculator(self.delta_time)
         self.ivvt_classifier = IvvtClassifier(sacadeThreshold=sacadeThreshold, smoothperThreshold=smoothperThreshold)
         self.pupil_alg = PupileAlg()
+
     def classify_bach(self, positions):
+        """
+        Classify a batch of videos
+        :param positions: the positions of the eye
+        :return: the classifications
+        """
         pos = self.pupil_alg.get_pupile_from_batch(positions)
         velocities = self.vel_calculator.calculate_batch(pos)
         return self.ivvt_classifier.classify_batch(velocities)
 
     def classify_video(self, positions):
+        """
+        Classify a video
+        :param positions:  the positions of the eye
+        :return:  the classifications
+        """
         pos = self.pupil_alg.get_pupile_from_vid(positions)
         velocities = self.vel_calculator.calculate_video(pos)
         return self.ivvt_classifier.classify(velocities)
 
     def from_loader(self, loader):
+        """
+        Classify a loader
+        :param loader:  the loader
+        :return:  the classifications
+        """
         return [c for innerlist in [self.classify_bach(bach) for bach in
                                     loader] for c in innerlist]
+
+
 def test():
+    """
+    testing the IVVt algorithm
+    """
     from util.dataUtils.dataset_loader import OpenEDSLoader
     from util.dataUtils.transformations import Crop_top, Crop
 
@@ -144,6 +215,7 @@ def test():
     assert classified_loader == classified
 
     print(classified)
+
 
 if __name__ == '__main__':
     test()
