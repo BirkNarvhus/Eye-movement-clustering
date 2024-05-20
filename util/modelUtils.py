@@ -1,4 +1,9 @@
 def get_n_params(model):
+    """
+    Util for getting the number of parameters in a model
+    :param model: the model
+    :return: the number of parameters
+    """
     param_size = 0
     for param in model.parameters():
         param_size += param.nelement() * param.element_size()

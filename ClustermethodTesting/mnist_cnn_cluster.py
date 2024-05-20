@@ -7,7 +7,7 @@ from torch.optim import Adam
 from models.pre_tests.simpleCnn import SimpleCnn
 from models.pre_tests.simClrLoss import SimCLR_Loss
 
-from util.plot_tsne import PlotUtil
+from util.plot_dim_reduced import PlotUtil
 
 #mpl.use('Qt5Agg')
 

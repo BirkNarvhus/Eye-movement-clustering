@@ -30,7 +30,7 @@ from pathlib import Path
 path_root = Path(__file__).parents[2]
 sys.path.append(str(path_root))
 
-from util.plot_tsne import PlotUtil
+from util.plot_dim_reduced import PlotUtil
 from models.finalImplementations.EncoderDecoder import EncoderDecoder
 from util.testingUtils.checkpointsLogging import CheckpointUtil
 from util.dataUtils.dataset_loader import OpenEDSLoader

@@ -6,7 +6,7 @@ from tqdm import tqdm
 from models.pre_tests.autoEncoder import AutoEncoder
 from util.dataUtils.data import data_generator
 
-from util.plot_tsne import PlotUtil
+from util.plot_dim_reduced import PlotUtil
 
 root = '../data/mnist'
 

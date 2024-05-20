@@ -29,7 +29,7 @@ from util.testingUtils.checkpointsLogging import CheckpointUtil
 from util.dataUtils.dataset_loader import OpenEDSLoader
 from util.layerFactory import LayerFactory
 
-from util.plot_tsne import PlotUtil
+from util.plot_dim_reduced import PlotUtil
 from util.dataUtils.transformations import *
 
 warnings.simplefilter("ignore", UserWarning)
