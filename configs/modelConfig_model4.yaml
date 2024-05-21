@@ -7,14 +7,13 @@ model:
   dil_bottleneck:
     bottleneck_input: 400
     bottleneck_output: 400
-    factors: [1, 2, 2]
+    factors: !!python/tuple [1, 2, 2]
   linear_bottleneck:
     use: True
     layers: 3
     bottleneck_input: 25600
     hidden: 2000
     bottleneck_output: 4096
-    factors: !!python/tuple [1, 2, 2]
   stream_buffer: False
 
 hyper_params:
