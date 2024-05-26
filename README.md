@@ -7,6 +7,8 @@ Dette innebærer også en rekke tester for å evaluere modellene. Modellene i mo
 mens modellene i ClustermetoderTesting er trent på MNIST datasettet. OpenEDS datasettet er ikke inkludert i dette repositoryet.
 Datasettet må lastes ned manuelt og legges i **data** mappen. Alle 3D modell scripts burde kjøres på Nvidia RTX 4090.
 
+Bruk av auto enkoder er ikke lurt for clustering, ettersom enkoda resultat har for mange dimmensjoner og har ikke linjere sammenhenger. Ved videre arbeid bruk en variational autoenkoder eller andre modeller
+
 
 ## Nødvendige biblioteker
 
